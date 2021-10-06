@@ -47,10 +47,27 @@ def mod_hom2(x, p):
         
         return y
 
+def modulus(a, b, neg = False):
+    """Calculate modulo of two numbers, with the option to return also negative values
+    @param neg : flag to determine whether to return negative modulo. Default = False
+    """
+    
+    length = (len(a))
+    
+    y = np.zeros((1,length), dtype = object)
+
+    y = np.mod(a, b)
+
+    if neg is True:
+        y = np.where(y >= b/2, y-b, y)
+
+    
+    return y
+
 class KEY:
     """This class holds all information needed to encrypt and decrypt data"""
 
-    def __init__(self, p = 10**18, L = 10**3, r=10**1, N = 50):
+    def __init__(self, p = 10**13, L = 10**3, r=10**1, N = 50):
         """Initialize the KEY class given the paramters:
         @param p : the plaintext space
         @param L :
@@ -58,16 +75,18 @@ class KEY:
         @param N : key lenght of secret key
         """
         
-        self.q = p * L
+        #Store input variables as class attributes
+        self.q = p * L 
         self.p = p
         self.L = L
         self.r = r
         self.N = N
 
+        #Warn user if plaintext space is larger than int64, which could cause problems
         if self.q > sys.maxsize: #or maxint
             warnings.warn("plaintext space exceeds int64", Warning)
 
-        self.secret_key = self.key_generate()
+        self.secret_key = self.key_generate() #generate secret key for encryption.
 
 
     def key_generate(self):
