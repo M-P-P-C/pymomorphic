@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
+import warnings
+
 import csv
 import random
 #import rospkg
@@ -8,13 +11,14 @@ import os
 import math
 from operator import add
 
+import secrets
+
 import time
 import json
 
 import pandas as pd
 
-import warnings
-import sys
+
 
 #add check to ensure inputted numbers are (integers) and warning
 
@@ -48,11 +52,33 @@ def mod_hom2(x, p):
         return y
 
 def modulus(a, b, neg = False):
-    """Calculate modulo of two numbers, with the option to return also negative values
-    @param neg : flag to determine whether to return negative modulo. Default = False
+    """
+    Calculate modulo of two numbers a%b, with the option to return also negative values using the flag "neg"
+
+    Parameters
+    ----------
+    a : list
+    b : list
+    neg : bool, optional
+        flag to determine whether to return negative modulo. 
+        if False (default), it will return only positive results
+
+    Examples
+    --------
+    Use case one:
+
+    >>> mod = modulus([10],[8])
+    >>> mod
+    [2]
+
+    Use case two for negative remainders:
+
+    >>> mod = modulus([8],[10], neg= True)
+    >>> mod
+    [-2]
     """
     
-    length = (len(a))
+    length = len(a)
     
     y = np.zeros((1,length), dtype = object)
 
@@ -61,19 +87,44 @@ def modulus(a, b, neg = False):
     if neg is True:
         y = np.where(y >= b/2, y-b, y)
 
-    
     return y
 
 class KEY:
     """This class holds all information needed to encrypt and decrypt data"""
 
-    def __init__(self, p = 10**13, L = 10**3, r=10**1, N = 50):
-        """Initialize the KEY class given the paramters:
-        @param p : the plaintext space
-        @param L :
-        @param r : error to be injected into encrypted values
-        @param N : key lenght of secret key
+    def __init__(self, p : "int" = 10**13, L = 10**3, r=10**1, N = 50, seed = None):
+        """Initialize the KEY class to encrypt and decrypt numbers.
+
+        Parameters
+        ----------
+        p : int
+            the plaintext space.
+        L :
+        r : int
+            error to be injected into encrypted values.
+        N : int
+            key lenght of secret key.
+        seed : int, optional
+            set any value to return always the same key, useful for debugging or in the case encrption and decryption happen in different scripts.
+            if None (default), generated numbers will remain random every time the class is called.
+
+        Returns
+        -------
+
+        Examples
+        --------
+        Initilize the KEY class with:
+
+        >>> my_key = KEY(p = 10**13, L = 10**3, r=10**1, N = 30)
+
+        To encrypt a value after initializing KEY:
+
+        >>> enc_m = my_key.encrypt(2)
+
         """
+
+        self.rand_set = random 
+        self.rand_set.seed(seed) #This is used to generate the same key for the encryption and decryption scripts.
         
         #Store input variables as class attributes
         self.q = p * L 
@@ -86,15 +137,33 @@ class KEY:
         if self.q > sys.maxsize: #or maxint
             warnings.warn("plaintext space exceeds int64", Warning)
 
+
         self.secret_key = self.key_generate() #generate secret key for encryption.
+
+    
+    def plaintext_space_check(self, m):
+        """
+        Checks the message to be encrypted fits within the set plaintext space p
+        
+        Parameters
+        ----------
+        m : int or list?
+            message to be encrypted
+        """
+
+        if self.p < m:
+            warnings.warn("the message to be encrypted does not fit in plaintext space")
 
 
     def key_generate(self):
         '''This function generates a secret key to encrypt and decrypt values'''
 
-        rand = [random.randrange(self.q*self.L) for iter in range(self.N)]
+        rand = [self.rand_set.randrange(self.q*self.L) for iter in range(self.N)] #for Python 2 since only Python 3 has "secrets"
 
-        sk = mod_hom(rand, self.q*self.L)
+        #secretsGenerator = secrets.SystemRandom()
+        #rand = [secretsGenerator.randrange(self.q*self.L) for iter in range(self.N)] #More secure but doesn't support seeds
+
+        sk = modulus(rand, self.q*self.L, neg = True)
 
         return sk
 
@@ -269,17 +338,88 @@ class KEY:
         self.secret_key = sk
 
 
+    def measure_performance_enc(test_var = "N", test_func = ["enc1", "enc2", "dec"], m = 380, range_val=[1,50], iter = 20, step = 5):
+        """ 
+        Measure perfomance of encryption and decryption functions
+
+        Parameters
+        ----------
+        test_var = string
+            determine which variable to test for. Only allows one of the following inputs : {"p", "L", "r", "N", "m"}
+        range_val = list [x,y]
+            sets the range of values to test for, with x as the minimum, and y as the maximum
+        iter : int
+            sets the amount of times to iterate operations
+        step : int
+            sets the steps between values to be calculated
+        """
+
+        valid_var = {"p", "L", "r", "N", "m"} #dict of valid inputs for argument test_vat
+        valid_func = {"ENC1", "ENC2", "DEC"} #dict of valid inputs for argument test_vat
+
+        test_func = [i.upper() for i in test_func] #capitlizes all inputs in test_func to avoid case sensitive issues
+
+        if test_var not in valid_var: #check the input for test_var is valid
+            raise ValueError("results: test_var must be one of %r." % valid_var)
+
+        for i in [0,1,2]:
+            if test_func[i] not in valid_func: #check the input for test_func is valid
+                raise ValueError("results: test_func must be one of %r." % valid_func)
+
+        
+
+        dataf = pd.DataFrame() #initialize dataframe to store values from test.
+        time_enc1 = pd.DataFrame()
+        time_enc2 = pd.DataFrame()
+        time_dec = pd.DataFrame()
+
+        for j in range(iter):
+            for i in range(range_val[0],range_val[1],step):
+
+                var.N = i
+                self.key_generate()
+
+                print("\n")
+                print("Round: " + str(j)+","+str(i))
+
+                if "ENC1" in test_func: 
+                    start_enc1 = time.time()
+                    ciphertext = self.enc_1(self.p, self.L, self.q, self.r, self.N, self.secret_key, m) 
+                    end_enc1 = time.time()
+
+                if "ENC2" in test_func: 
+                    start_enc2 = time.time()
+                    ciphertext2 = self.enc_2(self.p, self.L, self.q, self.r, self.N, self.secret_key, m)
+                    end_enc2 = time.time()
+
+                if "DEC" in test_func: 
+                    start_dec = time.time()
+                    decrypted = self.dec_hom(self.p, self.L, self.secret_key, ciphertext)
+                    end_dec = time.time()
+
+                time_enc1 = time_enc1.append([end_enc1 - start_enc1])
+                time_enc2 = time_enc2.append([end_enc2 - start_enc2])
+                time_dec = time_dec.append([end_dec - start_dec])
+
+            functions=['Enc1', 'Enc2', 'Dec']
+            temp_df = pd.concat([time_enc1,time_enc2,time_dec], axis =1)
+
+            temp_df.columns = functions
+            dataf = pd.concat([dataf,temp_df], axis = 1)
+            time_enc1 = pd.DataFrame()
+            time_enc2 = pd.DataFrame()
+            time_dec = pd.DataFrame()
+
+        #dirpath = os.getcwd()
+        dataf.to_csv(path_or_buf='Ncrypt_200.csv')
+
+
 def main():
     
     xxx = KEY(p = 10**13, L = 10**3, r=10**1, N = 50)
     #print "main function called, this function is used when trying to debug this script. It get's executed when running the file directly"
     variables_define(p = 10**13, L = 10**3, r=10**1, N = 50)
 
-
-    time_enc1 = pd.DataFrame()
-    time_enc2 = pd.DataFrame()
-    time_mult = pd.DataFrame()
-    time_dec = pd.DataFrame()
 
     
     testt = np.array([-0.92506512, 0])
@@ -299,61 +439,7 @@ def main():
     #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist())
     #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(10, dtype = int).tolist())
     #end_encmat = time.time()
-
-    dataf = pd.DataFrame()
-
-    for j in range(50):
-        for i in range(1,202,10):
-
-
-            var = variables_import()
-
-            var.N = i
-
-            key_generate(var.q, var.L, var.N, 1)
-
-            sk = key_import(1)
-
-            print("\n")
-            #print("Variable 1 to Encrypt: " + str(m[0]))
-            #print("Variable 2 to Encrypt: " + str(m2[0]))
-            print("Round: " + str(j)+","+str(i))
-
-
-            start_enc1 = time.time()
-            ciphertext = enc_1(var.p, var.L, var.q, var.r, var.N, sk, m) 
-            end_enc1 = time.time()
-
-            start_enc2 = time.time()
-            ciphertext2 = enc_2(var.p, var.L, var.q, var.r, var.N, sk, m2)
-            end_enc2 = time.time()
-
-            start_mult = time.time()
-            multiplied = hom_mul(var.q, ciphertext, ciphertext2)
-            end_mult = time.time()
-
-            start_dec = time.time()
-            decrypted = dec_hom(var.p, var.L, sk, [multiplied])
-            end_dec = time.time()
-
-            time_enc1 = time_enc1.append([end_enc1 - start_enc1])
-            time_enc2 = time_enc2.append([end_enc2 - start_enc2])
-            time_mult = time_mult.append([end_mult - start_mult])
-            time_dec = time_dec.append([end_dec - start_dec])
-
-        functions=['Enc1', 'Enc2', 'Mult', 'Dec']
-        temp_df = pd.concat([time_enc1,time_enc2,time_mult,time_dec], axis =1)
-
-        temp_df.columns = functions
-        dataf = pd.concat([dataf,temp_df], axis = 1)
-        time_enc1 = pd.DataFrame()
-        time_enc2 = pd.DataFrame()
-        time_mult = pd.DataFrame()
-        time_dec = pd.DataFrame()
-
-    dirpath = os.getcwd()
-
-    dataf.to_csv(path_or_buf='Ncrypt_200.csv')
+    
 
     #te=prep_pub_ros_str(multiplied)
     #recvr_pub_ros_str(te)
