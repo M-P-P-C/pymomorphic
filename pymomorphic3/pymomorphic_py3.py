@@ -23,32 +23,32 @@ import secrets
 def main():
 
     #Initialize some variables for testing purposes
-    my_p = 10**11
+    my_p = 10**12
     my_L = 10**3
     my_r = 10**1
     my_N = 5
-    m = [600]
-    m2 = [30]
+    m = [20]
+    m2 = [600]
     
     my_key = KEY(p = my_p , L = my_L, r = my_r , N = my_N)
 
-    my_p = np.array([-0.92506512, 0])
-    my_key.log_scaling(my_p, 3)
+    my_operator = HOM_OP(p = my_p, L = my_L, r = my_r , N = my_N)
 
-    #timeit.timeit(my_key.process_test)
+    test = np.array([-0.92506512, 0])
+    my_key.log_scaling(test, 3)
+
 
     my_c = my_key.encrypt(m)
-
-    my_c_dec = my_key.decrypt(my_c.tolist())
 
     my_c2 = my_key.encrypt2(m2)
 
 
-    my_operator = HOM_OP(p = my_p, L = my_L, r = my_r , N = my_N)
+    my_c_mult = my_operator.hom_multiply(my_c,my_c2)
 
-    my_c_mult = my_operator.multiply(my_c,my_c2)
+    
+    my_c_dec = my_key.decrypt(my_c.tolist())
 
-    my_p_mult = my_key.decrypt(my_c_mult.tolist())
+    my_p_mult = my_key.decrypt([my_c_mult])
 
 
     print("\n")
@@ -58,6 +58,8 @@ def main():
 
     
 
+    #timeit.timeit(my_key.process_test)
+    #timeit.timeit(lambda:my_key.encrypt2([20]), number = 1000)
 
             
 
@@ -234,8 +236,14 @@ class KEY:
         self.secret_key = self.key_generate() #generate secret key for encryption.
         self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T
 
+        #Initialize a variable used for the method "decryption"
         self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with 1 appended to it's start used in the decryption process
-    
+
+        #Initialize three variables used for the method "encryption2"
+        self.lq = int(math.log10(self.q))
+        self.R = np.kron(np.power(10, np.arange(self.lq, dtype = object)[:, None]), np.eye(self.N+1, dtype = object)) # "[:, None]" transposes the array made by np.arange
+        self.mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = int)
+
     def plaintext_space_check(self, m):
         """
         Checks the message to be encrypted fits within the set plaintext space p
@@ -320,49 +328,40 @@ class KEY:
 
 
     def process_test(self):
-        q_float = float(self.q)
-        A = np.random.uniform(low = 0, high = q_float, size=(1, self.N)).astype(object)
-        for i in range(0,len(A)):
-            A[i] = np.array(list(map(int,A[i])), dtype = object)
-
-        #print(A) 
+        mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = object)
 
     def process_test2(self):
-        q_float = float(self.q)
-        #A = np.around(np.random.uniform(low = 0, high = q_float, size=(1, self.N))).astype(object)
-
-        A  = np.rint(np.random.uniform(low = 0, high = q_float, size=(1, self.N))).tolist()
-
-        #print(A) 
+        mat_zeros_np = np.zeros(self.lq*(self.N+1)).astype(object)
 
 
 
-    def enc_2(self, m): #This function encrypts the values to be homomorphically multiplied
+    def encrypt2(self, m): #This function encrypts the values to be homomorphically multiplied
+        """
+        Encrypts message in plaintext form using enc2, used to encrypt the multiplicand in c1*c2 
+        
+        Parameters
+        ----------
+        m : int or list?
+            plaintext message to be encrypted
+
+        Returns
+        -------
+        x : numpy.array, shape (len(m),N)
+
+        Examples
+        --------
+        To encrypt a value after initializing KEY:
+
+        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
+        >>> enc_m = my_key.encrypt2([2])
+        >>> enc_m 
+        array([[-389913.0, 172905.0, -83785.0, -158262.0, 315695.0, -456781.0]], dtype=object)
+            
+        """
     
-        lq = int(math.log10(self.q))
-        
-        R = np.kron(np.power(10, np.arange(lq, dtype = object)[:, np.newaxis]), np.eye(self.N+1, dtype = object))
+        mat_zeros_enc = self.encrypt(self.mat_zeros_np.tolist())
 
-        mat_zeros_np = np.zeros(lq*(self.N+1), dtype = object)
-        
-        #mat_zeros = mat_zeros_np.tolist()
-
-        #start_zeros_np = time.time()
-        mat_zeros_enc = self.encrypt(mat_zeros_np.tolist())
-        #end_zeros_np = time.time()
-        #print "Time for zero encryption NUMPY" + str(end_zeros_np - start_zeros_np) 
-        
-        #start_zeros = time.time()
-        #mat_zeros_enc = enc_1(p, L, q, r, N, secret_key, mat_zeros)
-        #end_zeros = time.time()
-        #print "Time for zero encryption " + str(end_zeros - start_zeros) 
-
-        #start_zeros1 = time.time()
-        #mat_zeros_enc2 = enc_matlab(p, L, q, r, N, secret_key, mat_zeros)
-        #end_zeros1 = time.time()
-        #print "Time for zero encryption MAtlab" + str(end_zeros1 - start_zeros1) 
-
-        hold_1 = m*R
+        hold_1 = np.multiply(m,self.R)
         
         hold = np.add(hold_1, mat_zeros_enc)
 
@@ -562,10 +561,11 @@ class HOM_OP:
         self.r = r
         self.N = N
 
+        self.lq = int(math.log10(self.q)) #used in "decomp" method
+
 
     def decomp(self, c1): #function to carry out before multiplying used by the function "hom_mul"
-        
-        lq_np = int(math.log10(self.q))
+
 
         #c1_np = mod_hom2_np(c1, q)
         #print "ERROR c1 " + str(c1)
@@ -574,15 +574,15 @@ class HOM_OP:
 
         BBB=np.zeros((c1_np.shape[0],0), dtype = object)
 
-        for i in range(lq_np):
+        for i in range(self.lq):
 
-            dum = 10**(lq_np-1-i)
+            dum = int(10**(self.lq-1-i))
 
             Q_np = np.mod(c1_np, dum)
             
             Q_np = np.subtract(c1_np, Q_np)
 
-            BBB = np.append(Q_np/dum, BBB, axis= 1)
+            BBB = np.append(Q_np//dum, BBB, axis= 1) # "//" (true_divide) is used to ensure the output of the division is integers and not floats
 
             #c1 = [j - k for j, k in zip(c1,Q)]
             
@@ -591,7 +591,7 @@ class HOM_OP:
         return BBB
 
 
-    def hom_mul(self, c1, c2):
+    def hom_multiply(self, c1, c2):
         ''' This function performs the multiplication of two homomorphically encrypted values, c2 must be encrypted using the function "enc2" using NUMPY '''
         
         c1_np = np.array(c1, dtype = object)
@@ -641,6 +641,42 @@ class HOM_OP:
 
         return Mm_np.tolist()
 
+
+    def process_test(self):
+
+        Q_np = np.array([[8782623216192, 82290688562644, 24050809033837, 4556704189207,
+        81240272963829, 78318174827304, 20525199198674, 35216105868855,
+        5532596056824, 26715085180538, 54726712401807, 67434616998301,
+        14766234457878, 6239032352762, 28712806041169, 64265539557219,
+        17225986654082, 19139763491699, 43004204679282, 32758825713489,
+        35201138860222, 97951412908184, 50994202146731, 791572794012,
+        74531805743645, 19675944407054, 75846446149528, 14642509756305,
+        63345903946123, 56360276284193, 42053699266561, 69405575096656,
+        18845912609469, 86407502394888, 92817110905305, 58414422484087,
+        94328446196364, 35026574011514, 51604990711990, 52620171897821,
+        34559945043648, 91907886569462, 63053506026236, 27615824370433,
+        87318769672194, 7685920676361, 54580703950411, 83945052326522,
+        94928588215957, 24871629844108, 82834278175071]], dtype=object)
+        dum = 100000000000000
+        Q_np/dum
+
+    def process_test2(self):
+
+        Q_np = np.array([[8782623216192, 82290688562644, 24050809033837, 4556704189207,
+        81240272963829, 78318174827304, 20525199198674, 35216105868855,
+        5532596056824, 26715085180538, 54726712401807, 67434616998301,
+        14766234457878, 6239032352762, 28712806041169, 64265539557219,
+        17225986654082, 19139763491699, 43004204679282, 32758825713489,
+        35201138860222, 97951412908184, 50994202146731, 791572794012,
+        74531805743645, 19675944407054, 75846446149528, 14642509756305,
+        63345903946123, 56360276284193, 42053699266561, 69405575096656,
+        18845912609469, 86407502394888, 92817110905305, 58414422484087,
+        94328446196364, 35026574011514, 51604990711990, 52620171897821,
+        34559945043648, 91907886569462, 63053506026236, 27615824370433,
+        87318769672194, 7685920676361, 54580703950411, 83945052326522,
+        94928588215957, 24871629844108, 82834278175071]], dtype=object)
+        dum = 100000000000000
+        Q_np//dum
 
 
 
