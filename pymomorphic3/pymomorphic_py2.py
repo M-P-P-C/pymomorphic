@@ -17,21 +17,23 @@ import pandas as pd
 
 def main():
     #print "main function called, this function is used when trying to debug this script. It get's executed when running the file directly"
-    variables_define(p = 10**13, L = 10**3, r=10**1, N = 50)
+    variables_define(p = 10**12, L = 10**3, r=10**1, N = 50)
 
+    var = variables_import()
 
-    time_enc1 = pd.DataFrame()
-    time_enc2 = pd.DataFrame()
-    time_mult = pd.DataFrame()
-    time_dec = pd.DataFrame()
+    m = [20]
+
+    m2 = [600]
+
+    key_generate(var.q, var.L, var.N, 1)
 
     
     testt = np.array([-0.92506512, 0])
     log_scaling(testt, 3)
 
-    m = [20]
+    sk = key_import(1)
 
-    m2 = [600]
+
             
 
     #mult(281474976710655, [1,3], [[158777085946917,68804555223388,53304918513469], [109973083742059,71648586144056,25010707954525]])
@@ -44,60 +46,40 @@ def main():
     #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(10, dtype = int).tolist())
     #end_encmat = time.time()
 
-    dataf = pd.DataFrame()
-
-    for j in range(5):
-        for i in range(1,20,10):
 
 
-            var = variables_import()
 
-            var.N = i
-
-            key_generate(var.q, var.L, var.N, 1)
-
-            sk = key_import(1)
-
-            print("\n")
-            #print("Variable 1 to Encrypt: " + str(m[0]))
-            #print("Variable 2 to Encrypt: " + str(m2[0]))
-            print("Round: " + str(j)+","+str(i))
+    #var.N = i
 
 
-            start_enc1 = time.time()
-            ciphertext = enc_1(var.p, var.L, var.q, var.r, var.N, sk, m) 
-            end_enc1 = time.time()
 
-            start_enc2 = time.time()
-            ciphertext2 = enc_2(var.p, var.L, var.q, var.r, var.N, sk, m2)
-            end_enc2 = time.time()
+    
 
-            start_mult = time.time()
-            multiplied = hom_mul(var.q, ciphertext, ciphertext2)
-            end_mult = time.time()
+    #print("\n")
+    #print("Variable 1 to Encrypt: " + str(m[0]))
+    #print("Variable 2 to Encrypt: " + str(m2[0]))
+    #print("Round: " + str(j)+","+str(i))
 
-            start_dec = time.time()
-            decrypted = dec_hom(var.p, var.L, sk, [multiplied])
-            end_dec = time.time()
 
-            time_enc1 = time_enc1.append([end_enc1 - start_enc1])
-            time_enc2 = time_enc2.append([end_enc2 - start_enc2])
-            time_mult = time_mult.append([end_mult - start_mult])
-            time_dec = time_dec.append([end_dec - start_dec])
+    start_enc1 = time.time()
+    ciphertext = enc_1(var.p, var.L, var.q, var.r, var.N, sk, m) 
+    end_enc1 = time.time()
 
-        functions=['Enc1', 'Enc2', 'Mult', 'Dec']
-        temp_df = pd.concat([time_enc1,time_enc2,time_mult,time_dec], axis =1)
+    start_enc2 = time.time()
+    ciphertext2 = enc_2(var.p, var.L, var.q, var.r, var.N, sk, m2)
+    end_enc2 = time.time()
 
-        temp_df.columns = functions
-        dataf = pd.concat([dataf,temp_df], axis = 1)
-        time_enc1 = pd.DataFrame()
-        time_enc2 = pd.DataFrame()
-        time_mult = pd.DataFrame()
-        time_dec = pd.DataFrame()
+    start_mult = time.time()
+    multiplied = hom_mul(var.q, ciphertext, ciphertext2)
+    end_mult = time.time()
+
+    start_dec = time.time()
+    decrypted = dec_hom(var.p, var.L, sk, [multiplied])
+    end_dec = time.time()
+
 
     dirpath = os.getcwd()
 
-    dataf.to_csv(path_or_buf='Ncrypt_200.csv')
 
     #te=prep_pub_ros_str(multiplied)
     #recvr_pub_ros_str(te)
