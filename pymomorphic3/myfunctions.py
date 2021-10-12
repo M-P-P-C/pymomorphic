@@ -46,8 +46,8 @@ def main():
 
     dataf = pd.DataFrame()
 
-    for j in range(50):
-        for i in range(1,202,10):
+    for j in range(5):
+        for i in range(1,20,10):
 
 
             var = variables_import()
