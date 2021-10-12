@@ -13,7 +13,7 @@ The expected performance of the functions within the library with increasing sec
 
 # Code Example
 
-```
+```python
 >>> from pymomorphic3 import pymomorphic_py3 as pymorph3
 
 >>> m = 600
