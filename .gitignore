@@ -6,3 +6,6 @@ setup.py
 private_key_1.csv
 variables.csv
 pymomorphic3_test
+Lib/
+Scripts/
+pyvenv.cfg
