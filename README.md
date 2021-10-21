@@ -3,6 +3,15 @@
 This python script was developed as a part of my graduation theses for the University of Groningen.
 
 
+## Table of contents
+<!--ts-->
+  * [Performance](#performance)
+  * [Code Example](#code-example)
+  * [Resources](#resources)
+  * [Contributing](#contributing)
+<!--te-->
+
+
 # Performance
 
 The expected performance of the functions within the library with increasing secret key length:
@@ -24,3 +33,9 @@ The expected performance of the functions within the library with increasing sec
 
 >>> decrypted_c = my_key.decrypt(my_c)
 ```
+
+## Resources
+
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
