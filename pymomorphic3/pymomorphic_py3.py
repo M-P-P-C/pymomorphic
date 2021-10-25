@@ -1,5 +1,37 @@
 #!/usr/bin/env python3
 
+"""
+``pymomorphic3.pymomorphic_py3``
+================
+
+This pymomorphic_py3 package provides functions to homomorphically encrypt and
+operate on data using Python 3. Refer to pymomorphic_py2 to use with Python2.
+
+This package contains the following functions:
+
+Encryption/Decryption
+---------------------
+
+    key_generate
+    encrypt
+    encrypt2
+    enc_2_mat
+    log_scaling
+    decrypt
+
+Data Manipulation
+-----------------
+
+    modulus
+
+ROS publication
+---------------
+
+    prep_pub_ros_str
+    recvr_pub_ros_str
+
+"""
+
 import sys
 import warnings
 import os
@@ -16,9 +48,10 @@ import math
 from operator import add
 import secrets
 
+#TODO: add check to ensure input arguments are integers
+#TODO: update functions to accept integers instead of just lists, for ease of use.
+#TODO: write test functions to ensure everything works when compiling packages
 
-
-#add check to ensure input arguments are (integers) and warning
 
 def main():
 
@@ -214,9 +247,10 @@ class KEY:
         """
 
         self.rand_set = random 
-        self.rand_set.seed(seed) #This is used to generate the same key for the encryption and decryption scripts.
-
         self.rand_set_np = np.random #Initialize numpy's random package to determine if a seed is assigned or not
+
+        #For DEBUG purposes only:
+        self.rand_set.seed(seed) #These are used to generate the same key for the encryption and decryption scripts.
         self.rand_set_np.seed(seed)
         
         #Store input variables as class attributes
@@ -226,18 +260,19 @@ class KEY:
         self.r = r
         self.N = N
 
+        #convert q to float to use in functions that don't accept large integers
         self.q_float = float(self.q)
 
         #Warn user if plaintext space is larger than int64, which could cause problems
         if self.q > sys.maxsize: #or maxint
-            warnings.warn("plaintext space exceeds int64", Warning)
+            warnings.warn("plaintext space exceeds int64", Warning) #FIXME: this process needs checking
 
 
         self.secret_key = self.key_generate() #generate secret key for encryption.
-        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T
+        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
 
         #Initialize a variable used for the method "decryption"
-        self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with 1 appended to it's start used in the decryption process
+        self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with "1" appended to its start used in the decryption process
 
         #Initialize three variables used for the method "encryption2"
         self.lq = int(math.log10(self.q))
@@ -486,7 +521,7 @@ class KEY:
         VK : numpy.array, shape (len(m),N)
             scaled message
         sp_vk : int?
-            scaling amoung
+            scaling amount
 
         Examples
         --------
@@ -523,8 +558,6 @@ class KEY:
         #VK = [long(i) for i in np.around(VK, decimals =0)]
 
         return VK, S_vk[0][0]
-
-
 
 
 
@@ -567,10 +600,7 @@ class HOM_OP:
     def decomp(self, c1): #function to carry out before multiplying used by the function "hom_mul"
 
 
-        #c1_np = mod_hom2_np(c1, q)
-        #print "ERROR c1 " + str(c1)
-
-        c1_np = np.mod(c1, self.q)
+        c1_np = modulus(c1, self.q)
 
         BBB=np.zeros((c1_np.shape[0],0), dtype = object)
 
@@ -606,7 +636,7 @@ class HOM_OP:
         return x.tolist()[0]
 
 
-    def hom_mul_mat(q, N, c1, c2):
+    def hom_mul_mat(self, c1, c2):
         ''' This function performs the multiplication of a homomorphically encrypted matrix with a vector, c2 must be encrypted using the function "enc2" '''
         
         n4 = len(c1)
@@ -618,7 +648,7 @@ class HOM_OP:
 
         #Mm=[[0]*(N+1)]*n4
 
-        Mm_np = np.zeros((n4,N+1), dtype = object)
+        Mm_np = np.zeros((n4,self.N+1), dtype = object)
 
         #multiplied = [0]*len(Mm[0])
         #multiplied_np = np.zeros((1,n1), dtype = object)
@@ -642,47 +672,14 @@ class HOM_OP:
         return Mm_np.tolist()
 
 
-    def process_test(self):
-
-        Q_np = np.array([[8782623216192, 82290688562644, 24050809033837, 4556704189207,
-        81240272963829, 78318174827304, 20525199198674, 35216105868855,
-        5532596056824, 26715085180538, 54726712401807, 67434616998301,
-        14766234457878, 6239032352762, 28712806041169, 64265539557219,
-        17225986654082, 19139763491699, 43004204679282, 32758825713489,
-        35201138860222, 97951412908184, 50994202146731, 791572794012,
-        74531805743645, 19675944407054, 75846446149528, 14642509756305,
-        63345903946123, 56360276284193, 42053699266561, 69405575096656,
-        18845912609469, 86407502394888, 92817110905305, 58414422484087,
-        94328446196364, 35026574011514, 51604990711990, 52620171897821,
-        34559945043648, 91907886569462, 63053506026236, 27615824370433,
-        87318769672194, 7685920676361, 54580703950411, 83945052326522,
-        94928588215957, 24871629844108, 82834278175071]], dtype=object)
-        dum = 100000000000000
-        Q_np/dum
-
-    def process_test2(self):
-
-        Q_np = np.array([[8782623216192, 82290688562644, 24050809033837, 4556704189207,
-        81240272963829, 78318174827304, 20525199198674, 35216105868855,
-        5532596056824, 26715085180538, 54726712401807, 67434616998301,
-        14766234457878, 6239032352762, 28712806041169, 64265539557219,
-        17225986654082, 19139763491699, 43004204679282, 32758825713489,
-        35201138860222, 97951412908184, 50994202146731, 791572794012,
-        74531805743645, 19675944407054, 75846446149528, 14642509756305,
-        63345903946123, 56360276284193, 42053699266561, 69405575096656,
-        18845912609469, 86407502394888, 92817110905305, 58414422484087,
-        94328446196364, 35026574011514, 51604990711990, 52620171897821,
-        34559945043648, 91907886569462, 63053506026236, 27615824370433,
-        87318769672194, 7685920676361, 54580703950411, 83945052326522,
-        94928588215957, 24871629844108, 82834278175071]], dtype=object)
-        dum = 100000000000000
-        Q_np//dum
 
 
 
 
 
 
+#TODO: Review code below. The remaining code below is a translation of Matlab code provided by Junsoo Kim, that could help speed up
+#some processes, but at the moment it is not applicable
 
 ###################################################################################################################
 
