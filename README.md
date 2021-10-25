@@ -3,6 +3,15 @@
 This python script was developed as a part of my graduation theses for the University of Groningen.
 
 
+## Table of contents
+<!--ts-->
+  * [Performance](#performance)
+  * [Code Example](#code-example)
+  * [Resources](#resources)
+  * [Contributing](#contributing)
+<!--te-->
+
+
 # Performance
 
 The expected performance of the functions within the library with increasing secret key length:
@@ -24,16 +33,15 @@ The expected performance of the functions within the library with increasing sec
 
 >>> decrypted_c = my_key.decrypt(my_c)
 ```
-
 # Install as a Package
 
 I recommend installing this in a virtual environment rather than your main python installation to avoid any problems.
 
 First download the .whl file in the "dist" folder and run this command in the same directory:
 
-'''python
+```python
 pip install pymomorphic3-0.1.0-py3-none-any.whl
-'''
+```
 
 # Using Python Script
 
@@ -43,4 +51,11 @@ With these files you should be able to call the functions
 
 # Contributing
 
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+
 Setting up a virtual environment (venv), git commands and project structure. COMING SOON 
+
+# Resources
+
+
