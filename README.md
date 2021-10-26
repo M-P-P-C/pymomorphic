@@ -83,8 +83,8 @@ git clone -b <branch-name> --single-branch https://<your-username>:<your-private
 #cd into the folder you downloaded from github
 cd "pymomorphic3" 
 
-#Then set up the Python Virtual Environment into a folder called "venv"
-python3 -m venv "venv"
+#Then set up the Python Virtual Environment into a folder called "pymomorphic3_venv"
+python3 -m venv "pymomophic3_venv"
 
 #Finally, you can quickly install all required dependencies into your virtual environment with
 pip install -r "requirements.txt"
