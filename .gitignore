@@ -3,6 +3,9 @@ private_key_1.csv
 variables.csv
 pymomorphic3_venv
 
+
+.vscode
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -47,5 +50,22 @@ ENV/
 env.bak/
 venv.bak/
 
+
 # Cython debug symbols
 cython_debug/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+

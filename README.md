@@ -53,8 +53,89 @@ With these files you should be able to call the functions
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
+In this section I hope to add a clear step-by-step process for any DTPA lab student to work on the repository.
 
-Setting up a virtual environment (venv), git commands and project structure. COMING SOON 
+(This section will eventually go to a COMMITTING.md file to declutter the README)
+
+## Configuring git and Github
+
+(Coming later)
+
+## Setting up your Virtual Environment
+
+To experiment with this library without messing with your Python installation you'll first need a virtual environment to do it in. This section will quickly give you the commands you'll need to set it up, you'll find a lot more information on virtual envionments online.
+
+First I reccomend you make a folder where you can store multiple virtual environments if you need to:
+
+```bash
+mkdir "my_python_envs"
+```
+
+then cd into the created folder, clone this Github repo, and setup the virtual env:
+
+
+```bash
+cd "my_python_envs" 
+
+#This will download the files from github
+git clone -b <branch-name> --single-branch https://<your-username>:<your-private-token>@github.com/M-P-P-C/pymomorphic3.git 
+
+#cd into the folder you downloaded from github
+cd "pymomorphic3" 
+
+#Then set up the Python Virtual Environment into a folder called "venv"
+python3 -m venv "venv"
+
+#Finally, you can quickly install all required dependencies into your virtual environment with
+pip install -r "requirements.txt"
+```
+Depending on the branch you cloned, your folder should look something like this:
+
+```bash
+.
+├── media
+│   └── encryption_performance.png
+├── pymomorphic3
+│   ├── __init__.py
+│   ├── performance_analysis.py
+│   └── pymomorphic_py3.py
+├── README.md
+├── requirements.txt
+└── venv
+    ├── bin
+    ├── include
+    ├── lib
+    ├── lib64 -> lib
+    ├── pyvenv.cfg
+    └── share
+```
+
+with the folder containing your venv and the pymomorphic repo you are ready to start making changes, commiting them, and sending pull requests.
+
+## Useful git commands
+
+This is a small list of git commands you'll find yourself using often:
+
+```bash
+# Return which files have been altered and what is available to commit
+git status 
+
+# Staging files for your next commit
+git add <file-to-be-commited>
+
+# Commit changes to your local branch
+git commit -m "<ypur-message-here>"
+
+# Send files to the github repo (needs some extra configuration, like a private token)
+git push 
+```
+
+## Project Structure
+
+This repository is designed to provide an easily accessible library for Homomorphic Encryption functions. The code is divided into 3 categories, Python 2, Python 3, and Cython. Each language has its own branch that pull requests should be sent to for each respectve one. Then, within the "main" branch they are all combined for easy distribution.
+
+The "tests" folder uses pytest to contain methods that check the functioning of the code. Ideally, each time a new method is added a new test is added to ensure its functioning.
+
 
 # Resources
 
