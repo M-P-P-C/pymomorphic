@@ -41,7 +41,7 @@ import timeit
 import numpy as np
 import random #used to generate random arrays used in the encryption process
 import csv
-#import rospkg
+#import rospkg #this pac
 import json #used to convert lists to strings, used to send messages through ROS, as it does not support values larger than int64
 
 import math
@@ -60,15 +60,14 @@ def main():
     my_L = 10**3
     my_r = 10**1
     my_N = 5
+
+    #integers to encrypt and multiply
     m = [20]
     m2 = [600]
     
+    #initialize KEY and HOM_OP
     my_key = KEY(p = my_p , L = my_L, r = my_r , N = my_N)
-
     my_operator = HOM_OP(p = my_p, L = my_L, r = my_r , N = my_N)
-
-    test = np.array([-0.92506512, 0])
-    my_key.log_scaling(test, 3)
 
 
     my_c = my_key.encrypt(m)
@@ -90,85 +89,55 @@ def main():
     print("Expected Result:       " + str(m[0]*m2[0]))
 
     
+    #arrays to encrypt and multiply
+    M = [[10, 20, 30], [3, 4, 5]]
+    M2 = [100, 100, 100]
 
+    my_C = my_key.enc_2_mat(M)
+
+    my_C2 = my_key.encrypt(M2)
+
+    
+    my_C_mult = my_operator.hom_mul_mat(my_C, my_C2)
+
+
+    my_P_mult = my_key.decrypt(my_C_mult)
+
+    print("\n")
+    print("Expected Mult Result: " + str(np.dot(np.array(M),np.array(M2))))
+    print("Decrypted Matrix Mult Result: " + str(my_P_mult))
+
+
+    array_to_publish = my_key.prep_pub_ros_str([[1,2,3,4,5]])
+    string_array = my_key.recvr_pub_ros_str(array_to_publish)
+
+    print("\n")
+    print("Array to publish in ROS " + array_to_publish)
+    print("String array turned into a list " + str(string_array))
+
+    #test log scaling function
+    array_to_log_scale = np.array([-0.92506512, 0])
+    array_scaled = my_key.log_scaling(array_to_log_scale, 3)
+
+    print("\n")
+    print("Array to scale " + str(array_to_log_scale))
+    print("String array turned into a list " + str(array_scaled))
+
+    #functions to time any tasks in "process_test" method
     #timeit.timeit(my_key.process_test)
     #timeit.timeit(lambda:my_key.encrypt2([20]), number = 1000)
 
-            
-
-    #mult(281474976710655, [1,3], [[158777085946917,68804555223388,53304918513469], [109973083742059,71648586144056,25010707954525]])
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
-    #enc_mat(var.p, var.L, var.q, var.r, var.N, sk, [1,2,3]) 
-    #dec_mat(var.p, var.L, var.q, var.r, var.N, sk, enc_mat) 
-
-    #start_encmat = time.time()
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist())
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(10, dtype = int).tolist())
-    #end_encmat = time.time()
-    
-
-    #te=prep_pub_ros_str(multiplied)
-    #recvr_pub_ros_str(te)
-
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
-
-
-    #print "\n"
-    #print "Variable 1 in it's encrypted form: " #Expected = [[-49807360L, 77641302L, -495364491, -338818076, 128598971L, 405696980L]]
-
-    #print ciphertext
-
-    
-    #print timeit.timeit(enc_1_np(var.p, var.L, var.q, var.r, var.N, sk, m), number=100)
-
-    #plt.savefig('times.png')
-    #plt.ioff()
-
-    #example of z_values obtained with 3 neighboring robots
+    #example of z_values obtained with 3 neighboring robots in ROS
     #z_values = np.array([[ 0.00934644, -0.05645715, -0.80737489,  1.23556484], [-0.00632714,  0.67307276, -0.42058253,  1.25996497],[0.01942838,  0.72351229,  0.38469833,  1.2203629 ]])
 
-    #z_values_scal, scal = smart_scaling(z_values, 100)
-    
-    #print z_values_scal
-
-    #mm = [[237512851739963],[14658622955356],[229124840490966],[205100029880339],[227934635643093],[17846780355862],[55389962772409],[263011659097926],[119115587787204],[241769783421970],[129441262599146],[144502896940715],[226371045488786],[112192969310834],[255391071669921],[8694635013588],[27044624173938],[84810117512235],[335280182744],[93713232175970],[15595059329443],[182451631363946],[133244670283093],[237060086616293]]
-    
-    #tt = splitm(3, 16, 65535,mm)
-
-    #I need to test all functions for all possible combinations of list types and make sure they work properly and give always the same output
-
-    #m = [[1000,2000],[2000,3000]]
-    #res = enc_gains(sk, m)
-
-    #OMFG = hom_mul_mat(res, tt)
-
-    F = [[10, 20, 30], [3, 4, 5]]
-
-    #F = [[1,54]]
-    x = [100, 100, 100]
-
-    
-    cF = enc_2_mat(var.p, var.L, var.q, var.r, var.N, sk, F)
-    
-    cx = enc_1(var.p, var.L, var.q, var.r, var.N, sk, x)
-    
-    #cx22 = enc1_to_enc2(var.p, var.L, var.q, var.r, var.N, cx)
-    start_matmult = time.time()
-    cFcx = hom_mul_mat(var.q,var.N, cF,cx) #[[1,2],[3,4]]*[1,2] is [[1,2],[3,4]]*[[1],[2]]
-    end_matmult = time.time()
 
 
-    print("\n")
-    print("Expected Mult Result: " + str(np.dot(np.array(F),np.array([[100], [100], [100]]))))
-    print("Decrypted Matrix Mult Result: " + str(dec_hom(var.p, var.L, sk, cFcx)))
+    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
 
-    time_matmult = end_matmult - start_matmult
-    print("\n")
-    print("Time Matrix Mult " + str(time_matmult)) #Fast
+    #cx22 = enc1_to_enc2(var.p, var.L, var.q, var.r, var.N, cx) #a function that transforms variables in enc2 form to enc1
 
-    to_pub = prep_pub_ros(var.q, var.N, [[1,2,3,4,5]])
-    to_pub = prep_pub_ros(var.q, var.N,  cF)
-    recovered = recvr_pub_ros(var.q, var.N, to_pub, 2, 3)
+
+
 
 
 def modulus(a, b, neg = False):
@@ -415,7 +384,7 @@ class KEY:
 
         for i in range(n1):
             for j in range(n2):
-                cA[i][j] = self.enc_2([m[i][j]])
+                cA[i][j] = self.encrypt2([m[i][j]])
                 #could just use the insert syntax instead of assigning the whole matrix
 
         return cA
@@ -442,7 +411,6 @@ class KEY:
         >>> dec_m = my_key.decrypt(enc_m)
         >>> dec_m 
         array([[2]], dtype=object)
-
         '''
 
         c_np = np.array(c, dtype = object)
@@ -465,14 +433,14 @@ class KEY:
         return plaintext_np.tolist()
 
 
-    def prep_pub_ros_str(c):
+    def prep_pub_ros_str(self, c):
         '''used to convert a list to a string to publish encrypted values in ROS'''
 
-        string = json.dumps(c)
+        array_into_string = json.dumps(c)
         
-        return string
+        return array_into_string
 
-    def recvr_pub_ros_str(c):
+    def recvr_pub_ros_str(self, c):
         '''used to convert a string to a list that was previously modified using the method "prep_pub_ros_str()"'''
 
         pub_list = json.loads(c)
@@ -480,7 +448,22 @@ class KEY:
         return pub_list
 
 
-    def output_key_to_csv(self):
+    def output_key_to_csv(self, robot):
+        '''
+        Outputs generated secret key to a csv file
+        
+        Parameters
+        ----------
+        robot : int
+            number of Nexus robot the key belongs to (used in output filename)
+
+        Examples
+        --------
+        To encrypt a value after initializing KEY:
+
+        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
+        >>> my_key.output_key_to_csv(1)
+        '''
 
         PATH = os.path.dirname(os.path.abspath(__file__)) #rospack.get_path(ros_package)
         FILEPATH = os.path.join(PATH, 'private_key_'+str(robot)+'.csv')
@@ -490,7 +473,7 @@ class KEY:
             for val in self.sk:
                 writer.writerow([val])
 
-    def read_key_from_csv(self):
+    def read_key_from_csv(self, robot):
 
         sk = []
 
@@ -535,7 +518,7 @@ class KEY:
         """
 
         #if type(vk) == float:
-        vk = np.array(vk, dtype = np.float)[np.newaxis]
+        vk = np.array(vk, dtype = float)[np.newaxis]
         #else:
         #    a=1
 
