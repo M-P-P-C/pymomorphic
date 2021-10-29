@@ -433,21 +433,6 @@ class KEY:
         return plaintext_np.tolist()
 
 
-    def prep_pub_ros_str(self, c):
-        '''used to convert a list to a string to publish encrypted values in ROS'''
-
-        array_into_string = json.dumps(c)
-        
-        return array_into_string
-
-    def recvr_pub_ros_str(self, c):
-        '''used to convert a string to a list that was previously modified using the method "prep_pub_ros_str()"'''
-
-        pub_list = json.loads(c)
-            
-        return pub_list
-
-
     def output_key_to_csv(self, robot):
         '''
         Outputs generated secret key to a csv file
@@ -656,7 +641,37 @@ class HOM_OP:
 
 
 
+def prep_pub_ros_str(self, c):
+    '''Used to convert a list to a string to publish encrypted values in ROS
+    
+    Parameters
+    ----------
+    c : list
+    
+    Returns
+    -------
+    array_into_string: string
+    '''
 
+    array_into_string = json.dumps(c)
+    
+    return array_into_string
+
+def recvr_pub_ros_str(self, c):
+    '''used to convert a string to a list that was previously modified using the method "prep_pub_ros_str()"
+    
+    Parameters
+    ----------
+    c : string
+    
+    Returns
+    -------
+    pub_list: list
+    '''
+
+    pub_list = json.loads(c)
+        
+    return pub_list
 
 
 
