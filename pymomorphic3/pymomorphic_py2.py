@@ -1,669 +1,670 @@
 #!/usr/bin/env python2
 
-import csv
-import random
-#import rospkg
-import numpy as np
+"""
+``pymomorphic3.pymomorphic_py2``
+================
+
+This pymomorphic_py2 package provides functions to homomorphically encrypt and
+operate on data using Python2. Refer to pymomorphic_py3 to use with Python3.
+
+This package contains the following functions:
+
+Encryption/Decryption
+---------------------
+
+    key_generate
+    encrypt
+    encrypt2
+    enc_2_mat
+    log_scaling
+    decrypt
+
+Data Manipulation
+-----------------
+
+    modulus
+
+ROS publication
+---------------
+
+    prep_pub_ros_str
+    recvr_pub_ros_str
+
+"""
+
+import sys
+import warnings
 import os
+import time
+import timeit
+
+import numpy as np
+import random #used to generate random arrays used in the encryption process
+import csv
+#import rospkg #this pac
+import json #used to convert lists to strings, used to send messages through ROS, as it does not support values larger than int64
+
 import math
 from operator import add
+import secrets
 
-import time
-import json
+#TODO: add check to ensure input arguments are integers
+#TODO: update functions to accept integers instead of just lists, for ease of use.
+#TODO: write test functions to ensure everything works when compiling packages
 
-import pandas as pd
-
-#add check to ensure inputted numbers are (integers) and warning
 
 def main():
-    #print "main function called, this function is used when trying to debug this script. It get's executed when running the file directly"
-    variables_define(p = 10**12, L = 10**3, r=10**1, N = 50)
 
-    var = variables_import()
+    #Initialize some variables for testing purposes
+    my_p = 10**12
+    my_L = 10**3
+    my_r = 10**1
+    my_N = 5
 
+    #integers to encrypt and multiply
     m = [20]
-
     m2 = [600]
+    
+    #initialize KEY and HOM_OP
+    my_key = KEY(p = my_p , L = my_L, r = my_r , N = my_N)
+    my_operator = HOM_OP(p = my_p, L = my_L, r = my_r , N = my_N)
 
-    key_generate(var.q, var.L, var.N, 1)
+
+    my_c = my_key.encrypt(m)
+
+    my_c2 = my_key.encrypt2(m2)
+
+
+    my_c_mult = my_operator.hom_multiply(my_c,my_c2)
 
     
-    testt = np.array([-0.92506512, 0])
-    log_scaling(testt, 3)
+    my_c_dec = my_key.decrypt(my_c.tolist())
 
-    sk = key_import(1)
+    my_p_mult = my_key.decrypt([my_c_mult])
 
-
-            
-
-    #mult(281474976710655, [1,3], [[158777085946917,68804555223388,53304918513469], [109973083742059,71648586144056,25010707954525]])
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
-    #enc_mat(var.p, var.L, var.q, var.r, var.N, sk, [1,2,3]) 
-    #dec_mat(var.p, var.L, var.q, var.r, var.N, sk, enc_mat) 
-
-    #start_encmat = time.time()
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist())
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(10, dtype = int).tolist())
-    #end_encmat = time.time()
-
-
-
-
-    #var.N = i
-
-
-
-    
-
-    #print("\n")
-    #print("Variable 1 to Encrypt: " + str(m[0]))
-    #print("Variable 2 to Encrypt: " + str(m2[0]))
-    #print("Round: " + str(j)+","+str(i))
-
-
-    start_enc1 = time.time()
-    ciphertext = enc_1(var.p, var.L, var.q, var.r, var.N, sk, m) 
-    end_enc1 = time.time()
-
-    start_enc2 = time.time()
-    ciphertext2 = enc_2(var.p, var.L, var.q, var.r, var.N, sk, m2)
-    end_enc2 = time.time()
-
-    start_mult = time.time()
-    multiplied = hom_mul(var.q, ciphertext, ciphertext2)
-    end_mult = time.time()
-
-    start_dec = time.time()
-    decrypted = dec_hom(var.p, var.L, sk, [multiplied])
-    end_dec = time.time()
-
-
-    dirpath = os.getcwd()
-
-
-    #te=prep_pub_ros_str(multiplied)
-    #recvr_pub_ros_str(te)
-
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
 
     print("\n")
-    print("Decrypted Variable 1: " + str(dec_hom(var.p, var.L, sk, [ciphertext])[0][0]))
-    print("Multiplication Result: " + str(dec_hom(var.p, var.L, sk, [multiplied])[0][0]))
+    print("Decrypted Variable 1: " + str(my_c_dec))
+    print("Multiplication Result: " + str(my_p_mult))
     print("Expected Result:       " + str(m[0]*m2[0]))
-    #print "\n"
-    #print "Variable 1 in it's encrypted form: " #Expected = [[-49807360L, 77641302L, -495364491, -338818076, 128598971L, 405696980L]]
-
-    #print ciphertext
-
-
-
-    functions=['Enc1', 'Enc2', 'Mult', 'Dec']
-    slow_data=[time_enc1,time_enc2,time_mult, time_dec]
 
     
+    #arrays to encrypt and multiply
+    M = [[10, 20, 30], [3, 4, 5]]
+    M2 = [100, 100, 100]
+
+    my_C = my_key.enc_2_mat(M)
+
+    my_C2 = my_key.encrypt(M2)
+
+    
+    my_C_mult = my_operator.hom_mul_mat(my_C, my_C2)
+
+
+    my_P_mult = my_key.decrypt(my_C_mult)
+
     print("\n")
-    print("Time Enc1 " + str(time_enc1)) #Fast
-    print("Time Enc2 " + str(time_enc2)) #Slow at high N
-    print("Time Mult " + str(time_mult))
-    print("Time Dec " + str(time_dec))
-
-    import seaborn as sns
-    import matplotlib.pyplot as plt
+    print("Expected Mult Result: " + str(np.dot(np.array(M),np.array(M2))))
+    print("Decrypted Matrix Mult Result: " + str(my_P_mult))
 
 
-    data = pd.DataFrame()
-    data["Step"]=functions+functions
-    data["time"]=slow_data
-    data["mode"]=["old","old","old","old","new","new","new","new"]
+    array_to_publish = my_key.prep_pub_ros_str([[1,2,3,4,5]])
+    string_array = my_key.recvr_pub_ros_str(array_to_publish)
 
-    plt.ioff()
-    fig = plt.figure(1,(10,10))
-    ax =fig.add_subplot(1,1,1)
-    ax=sns.barplot(data=data, x="Step", y="time", hue="mode")
-    #plt.show()'''
-    
-    import timeit
-    #print timeit.timeit(enc_1_np(var.p, var.L, var.q, var.r, var.N, sk, m), number=100)
+    print("\n")
+    print("Array to publish in ROS " + array_to_publish)
+    print("String array turned into a list " + str(string_array))
 
-    #plt.savefig('times.png')
-    #plt.ioff()
+    #test log scaling function
+    array_to_log_scale = np.array([-0.92506512, 0])
+    array_scaled = my_key.log_scaling(array_to_log_scale, 3)
 
-    #example of z_values obtained with 3 neighboring robots
+    print("\n")
+    print("Array to scale " + str(array_to_log_scale))
+    print("String array turned into a list " + str(array_scaled))
+
+    #functions to time any tasks in "process_test" method
+    #timeit.timeit(my_key.process_test)
+    #timeit.timeit(lambda:my_key.encrypt2([20]), number = 1000)
+
+    #example of z_values obtained with 3 neighboring robots in ROS
     #z_values = np.array([[ 0.00934644, -0.05645715, -0.80737489,  1.23556484], [-0.00632714,  0.67307276, -0.42058253,  1.25996497],[0.01942838,  0.72351229,  0.38469833,  1.2203629 ]])
 
-    #z_values_scal, scal = smart_scaling(z_values, 100)
+
+
+    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
+
+    #cx22 = enc1_to_enc2(var.p, var.L, var.q, var.r, var.N, cx) #a function that transforms variables in enc2 form to enc1
+
+
+
+
+
+def modulus(a, b, neg = False):
+    """
+    Calculate modulo of two numbers a%b, with the option to return also negative remainders using the flag "neg"
+
+    Parameters
+    ----------
+    a : list
+    b : list
+    neg : bool, optional
+        flag to determine whether to return negative remainders. 
+        if False (default), it will return only positive results
+
+    Examples
+    --------
+    Use case one:
+
+    >>> mod = modulus([10],[8])
+    >>> mod
+    [2]
+
+    Use case two, set argument "neg=True", for negative remainders:
+
+    >>> mod = modulus([8],[10], neg=True)
+    >>> mod
+    [-2]
+    """
     
-    #print z_values_scal
-
-    #mm = [[237512851739963],[14658622955356],[229124840490966],[205100029880339],[227934635643093],[17846780355862],[55389962772409],[263011659097926],[119115587787204],[241769783421970],[129441262599146],[144502896940715],[226371045488786],[112192969310834],[255391071669921],[8694635013588],[27044624173938],[84810117512235],[335280182744],[93713232175970],[15595059329443],[182451631363946],[133244670283093],[237060086616293]]
+    length = len(a)
     
-    #tt = splitm(3, 16, 65535,mm)
-
-    #I need to test all functions for all possible combinations of list types and make sure they work properly and give always the same output
-
-    #m = [[1000,2000],[2000,3000]]
-    #res = enc_gains(sk, m)
-
-    #OMFG = hom_mul_mat(res, tt)
-
-    F = [[10, 20, 30], [3, 4, 5]]
-
-    #F = [[1,54]]
-    x = [100, 100, 100]
-
-    
-    cF = enc_2_mat(var.p, var.L, var.q, var.r, var.N, sk, F)
-    
-    cx = enc_1(var.p, var.L, var.q, var.r, var.N, sk, x)
-    
-    #cx22 = enc1_to_enc2(var.p, var.L, var.q, var.r, var.N, cx)
-    start_matmult = time.time()
-    cFcx = hom_mul_mat(var.q,var.N, cF,cx) #[[1,2],[3,4]]*[1,2] is [[1,2],[3,4]]*[[1],[2]]
-    end_matmult = time.time()
-
-
-    print("\n")
-    print("Expected Mult Result: " + str(np.dot(np.array(F),np.array([[100], [100], [100]]))))
-    print("Decrypted Matrix Mult Result: " + str(dec_hom(var.p, var.L, sk, cFcx)))
-
-    time_matmult = end_matmult - start_matmult
-    print("\n")
-    print("Time Matrix Mult " + str(time_matmult)) #Fast
-
-    to_pub = prep_pub_ros(var.q, var.N, [[1,2,3,4,5]])
-    to_pub = prep_pub_ros(var.q, var.N,  cF)
-    recovered = recvr_pub_ros(var.q, var.N, to_pub, 2, 3)
-
-    
-
-
-
-def mod_hom(x, p):
-    '''modulus function that works with negative values using numpy'''
-
-    try:
-        length = (len(x))
-    except:
-        length = 1
-
     y = np.zeros((1,length), dtype = object)
 
-    y = np.mod(x, p)
+    y = np.mod(a, b)
 
-    y = np.where(y >= p/2, y-p, y)
+    if neg is True:
+        y = np.where(y >= b/2, y-b, y)
 
     return y
 
-    
-def mod_hom2(x, p):
-        try:
-            length = (len(x))
-        except:
-            length = 1
 
-        y = np.zeros((1,length), dtype = object)
+class KEY:
+    """ This class holds all methods needed to encrypt and decrypt data """
 
-        y = np.mod(x, p)
+    def __init__(self, p = 10**13, L = 10**3, r =10**1, N = 50, seed = None):
+        """
+        Initialize the KEY class to encrypt and decrypt integers.
+
+        Parameters
+        ----------
+        p : int
+            the plaintext space.
+        L : int
+
+        r : int
+            error to be injected into encrypted values.
+        N : int
+            key lenght of secret key.
+        seed : int, optional
+            set any value to return always the same key, useful for debugging or in the case encrption and decryption happen in different scripts.
+            if None (default), generated numbers will remain random every time the class is called.
+
+        Returns
+        -------
+
+        Examples
+        --------
+        Initilize the KEY class with:
+
+        >>> my_key = KEY(p = 10**13, L = 10**3, r=10**1, N = 30)
+
+        To encrypt a value after initializing KEY:
+
+        >>> enc_m = my_key.Encrypt(2)
+
+        """
+
+        self.rand_set = random 
+        self.rand_set_np = np.random #Initialize numpy's random package to determine if a seed is assigned or not
+
+        #For DEBUG purposes only:
+        self.rand_set.seed(seed) #These are used to generate the same key for the encryption and decryption scripts.
+        self.rand_set_np.seed(seed)
         
-        return y
-
-def variables_define(p = 10**4, L = 10**4, r=10**1, N = 5): 
-    '''This function generates a csv file with the variables for homomorphic such that the different ROS nodes can access the same variables'''
-
-    #mod_s = 3
-
-    q = p * L
-
-    #s_G = 2**19 #p
-
-    #mod_e = 2**6+1 #r (should apparently be odd)
-
-
-    n=1
-    n_ = n+1 #This one extends the number as a vector so it's similar to N
-    
-    nu = 16
-    nu2 = 2**nu-1
-
-
-    signal_bound =4
-    
-    #s_G=p
-    import math
-    mod_g = 2**math.ceil(math.log(2*signal_bound*L*p,2))
-    mod_q = int(mod_g) #same as q
-    d = math.ceil(math.log(mod_q,2)/nu)
-    mod_qe = mod_q-math.ceil(r/2)
-    mod_qg = mod_q/mod_g
-    mod_q1 = mod_q - 1
-
-    PATH = os.path.dirname(os.path.abspath(__file__))
-    FILEPATH = os.path.join(PATH, 'variables.csv')
-
-    with open(FILEPATH, "w") as output:
-        writer = csv.writer(output, delimiter=',')
-        writer.writerow([p])
-        writer.writerow([L])
-        writer.writerow([q])
-        writer.writerow([r])
-        writer.writerow([N])
-        #writer.writerow([mod_s])
-        writer.writerow([signal_bound])
-        writer.writerow([nu])
-        writer.writerow([nu2])
-
-
-
-
-def variables_import(ros_package = 'nexhom'):
-    '''This function imports the variables from the csv file'''
-
-    class variables: #This creates an object to store the variables in
-        def __init__(self): 
-
-            #rospack = rospkg.RosPack()
-            PATH = os.path.dirname(os.path.abspath(__file__)) #rospack.get_path(ros_package)
-            FILEPATH = os.path.join(PATH, 'variables.csv')
-
-            with open(FILEPATH, 'rb') as f: #This section reads the csv file to gather the private key to encrypt
-                reader = csv.reader(f, delimiter='\n')
-                lis = list(reader)
-                self.p=eval(lis[0][0])
-                self.L=eval(lis[1][0])
-                self.q=eval(lis[2][0])
-                self.r=eval(lis[3][0])
-                self.N=eval(lis[4][0])
-
-    var = variables()
-
-    return var
-
-
-def key_generate(q, L, N, robot):
-    '''This function generates a secret key to encrypt and saves it into a csv file'''
-    
-    rand = [random.randrange(q*L) for iter in range(N)]
-
-    sk = mod_hom(rand, q*L)
-
-    PATH = os.path.dirname(os.path.abspath(__file__)) #rospack.get_path(ros_package)
-    FILEPATH = os.path.join(PATH, 'private_key_'+str(robot)+'.csv')
-
-    with open(FILEPATH, "w") as output:
-        writer = csv.writer(output, delimiter=',')
-        for val in sk:
-            writer.writerow([val])
-
-
-
-def key_import(robot, ros_package = 'nexhom'):
-    '''This function imports the key created into a csv file by the "key_generate" function'''
-    #rospack = rospkg.RosPack()
-    #PATH = rospack.get_path(ros_package)
-
-    sk = []
-
-    PATH = os.path.dirname(os.path.abspath(__file__)) #rospack.get_path(ros_package)
-    FILEPATH = os.path.join(PATH, 'private_key_'+str(robot)+'.csv')
-
-    with open(FILEPATH, 'rb') as f: #This section reads the csv file to gather the private key to encrypt
-        reader = csv.reader(f, delimiter='\n')
-        lis = list(reader)
-        for i in lis:
-            sk.append(eval(i[0]))
-
-    return sk
-
-
-
-def enc_1(p, L, q, r, N, secret_key, m): #This function encrypts the values into a vector (use this to sum homomorphically)
-    '''
-    This function will encrypt scalars, if fed a list it will encrypt each integer individually, to encrypt matrices refer to enc_mat
-    '''
-    
-    n = len(m)
-
-    q_float = float(q)
-
-    #A = np.random.uniform(low = 0, high = q_float, size=(n, N))
-    A = np.random.uniform(low = 0, high = q_float, size=(n, N)).astype(object) #np.around(np.random.uniform(low = 0, high = q_float, size=(n, N))).astype(object)
-    
-    for i in range(0,len(A)):
-        A[i] = np.array(map(long, A[i]), dtype = object) 
-    #A = np.array([map(long,i) for i in A], dtype = object)
-
-    #ALISTLONG = [long(i) for i in A.tolist()[0]]
-    #A_list = [[long(i) for i in inner] for inner in A]
-    #A = np.array(A_list, dtype=object)
-    
-    #A = np.array(ALISTLONG, dtype=object)[np.newaxis]
-    
-    m = np.array(m)[:,np.newaxis]
-
-    dum = np.random.randint(low = 1, high = r, size = [n,1])
-    
-    e = mod_hom(dum, r)
-
-    #b = np.zeros((n,1), dtype = object)
-
-    secret_key_np = np.array(secret_key, dtype = object)[:,np.newaxis]
-
-    b = np.dot(-A, secret_key_np)
-
-    #b = b[np.newaxis]
-
-    add = np.zeros((1, e.shape[0]), dtype = object)
-    
-    
-    add = np.add(L*m,e)
-
-    b = b+add
-
-    A = np.append(b, A, axis =1)
-
-    
-    #ciphertext = np.zeros((n,N+1), dtype = object)
-
-    ciphertext = mod_hom(A, q)
-
-    #print(ciphertext)
-
-    return [map(long,i) for i in ciphertext] #ciphertext.tolist()
-
-
-def enc_2(p, L, q, r, N, secret_key, m): #This function encrypts the values to be homomorphically multiplied
-    
-    lq = int(math.log10(q))
-    
-    R = np.kron(np.power(10, np.arange(lq, dtype = object)[:, np.newaxis]), np.eye(N+1, dtype = object))
-
-    mat_zeros_np = np.zeros(lq*(N+1), dtype = object)
-    
-    #mat_zeros = mat_zeros_np.tolist()
-
-    #start_zeros_np = time.time()
-    mat_zeros_enc = enc_1(p, L, q, r, N, secret_key, mat_zeros_np)
-    #end_zeros_np = time.time()
-    #print "Time for zero encryption NUMPY" + str(end_zeros_np - start_zeros_np) 
-    
-    #start_zeros = time.time()
-    #mat_zeros_enc = enc_1(p, L, q, r, N, secret_key, mat_zeros)
-    #end_zeros = time.time()
-    #print "Time for zero encryption " + str(end_zeros - start_zeros) 
-
-    #start_zeros1 = time.time()
-    #mat_zeros_enc2 = enc_matlab(p, L, q, r, N, secret_key, mat_zeros)
-    #end_zeros1 = time.time()
-    #print "Time for zero encryption MAtlab" + str(end_zeros1 - start_zeros1) 
-
-    hold_1 = m*R
-    
-    hold = np.add(hold_1, mat_zeros_enc)
-
-    #ciphertext = np.empty((len(mat_zeros_enc[0]), len(mat_zeros_enc)), dtype = object)
-    
-    ciphertext = mod_hom(hold, q)
-
-    return ciphertext.tolist()
-
-def enc_2_mat(p, L, q, r, N, secret_key, m): #This function encrypts the values of a matrix to be homomorphically multiplied
-    n1 = len(m)
-    n2 = len(m[0])
-
-    cA = np.zeros((n1, n2, int(math.log10(q)*(N+1)), N+1)).astype(int).tolist()
-
-    for i in range(n1):
-        for j in range(n2):
-            cA[i][j] = enc_2(p, L, q, r, N, secret_key, [m[i][j]])
-            #could just use the insert syntax instead of assigning the whole matrix
-
-    return cA
-
-
-
-def dec_hom(p, L, secret_key, c):
-    '''This function decrypts a homomorphically encrypted value using NUMPY'''
-
-    s_np = np.array(secret_key)
-    c_np = np.array(c, dtype = object)
-
-    s_np = np.append(1, s_np)[:,np.newaxis] #append "1" to the secret key
-    #s_np = s_np.T
-
-    #plaintext_np = np.zeros([1,len(c)], dtype = object)
-    
-    dot = np.dot(c_np, s_np)
-
-    plain = mod_hom(dot, L*p)
-
-    plaintext_np = plain.astype(float)/L
-
-    if type(plaintext_np) != float:
-        plaintext_np = np.around(plaintext_np).astype(int)
-    else:
-        plaintext_np = round(plaintext_np)
-        plaintext_np = int(plaintext_np)
-
-
-    #print(plaintext_np.tolist())
-    return plaintext_np.tolist()
-
-
-def decomp(q, c1): #function to carry out before multiplying used by the function "hom_mul"
-    
-    lq_np = int(math.log10(q))
-
-    #c1_np = mod_hom2_np(c1, q)
-    #print "ERROR c1 " + str(c1)
-
-    c1_np = np.mod(c1, q)
-
-    BBB=np.zeros((c1_np.shape[0],0), dtype = object)
-
-    for i in range(lq_np):
-
-        dum = 10**(lq_np-1-i)
-
-        Q_np = np.mod(c1_np, dum)
+        #Store input variables as class attributes
+        self.q = p * L 
+        self.p = p
+        self.L = L
+        self.r = r
+        self.N = N
+
+        #convert q to float to use in functions that don't accept large integers
+        self.q_float = float(self.q)
+
+        #Warn user if plaintext space is larger than int64, which could cause problems
+        if self.q > sys.maxsize: #or maxint
+            warnings.warn("plaintext space exceeds int64", Warning) #FIXME: this process needs checking
+
+
+        self.secret_key = self.key_generate() #generate secret key for encryption.
+        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
+
+        #Initialize a variable used for the method "decryption"
+        self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with "1" appended to its start used in the decryption process
+
+        #Initialize three variables used for the method "encryption2"
+        self.lq = int(math.log10(self.q))
+        self.R = np.kron(np.power(10, np.arange(self.lq, dtype = object)[:, None]), np.eye(self.N+1, dtype = object)) # "[:, None]" transposes the array made by np.arange
+        self.mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = int)
+
+    def plaintext_space_check(self, m):
+        """
+        Checks the message to be encrypted fits within the set plaintext space p
         
-        Q_np = np.subtract(c1_np, Q_np)
+        Parameters
+        ----------
+        m : int or list?
+            message to be encrypted
+        """
 
-        BBB = np.append(Q_np/dum, BBB, axis= 1)
+        if self.p < m:
+            warnings.warn("the message to be encrypted does not fit in plaintext space")
 
-        #c1 = [j - k for j, k in zip(c1,Q)]
+
+    def key_generate(self):
+        """
+        This function generates a secret key to encrypt and decrypt values
+        """
+
+        rand = [self.rand_set.randrange(self.q*self.L) for iter in range(self.N)] #for Python 2 since only Python 3 has "secrets"
+
+        #secretsGenerator = secrets.SystemRandom()
+        #rand = [secretsGenerator.randrange(self.q*self.L) for iter in range(self.N)] #More secure but doesn't support seeds
+
+        sk = modulus(rand, self.q*self.L, neg = True)
+
+        return sk
+
+    def encrypt(self,m):
+        """
+        Encrypts message in plaintext form in enc1, or enc2 defined by the flag 'type' 
         
-        c1_np = np.subtract(c1_np,Q_np)
+        Parameters
+        ----------
+        m : int or list?
+            plaintext message to be encrypted
 
-    return BBB
+        Returns
+        -------
+        x : numpy.array, shape (len(m),N)
 
-def prep_pub_ros(q, N, c):
-    '''used to flatten lists to publish in ROS'''
+        Examples
+        --------
+        To encrypt a value after initializing KEY:
 
-    col = N+1
-
-    c = np.array(c, dtype = np.int64).tolist() #ADDED TO ENSURE VALUES GOING TO ROS ARE UP TO INT64
-        
-    row = len(c)
-
-    while isinstance(c[0], list):
-        c = [item for sublist in c for item in sublist]
-
-    return c
-
-def prep_pub_ros_str(c):
-    '''used to convert a list to a string to publish in ROS'''
-
-    string = json.dumps(c)
-    
-    return string
-
-def recvr_pub_ros_str(c):
-    '''used to convert a list to a string to publish in ROS'''
-
-    pub_list = json.loads(c)
-        
-    return pub_list
-
-def recvr_pub_ros(q, N, c, row=2, col=2):
-    '''used to recover flattened lists created with prep_pub_ros to publish in ROS'''
-
-    len_enc2 = int(math.log10(q))*(N+1)
-
-    c_rebuilt=[]
-    for i in range(0, len(c), N+1):
-        c_rebuilt.append(list(c[i:(N+1)+i]))
-    
-    if len(c_rebuilt) > len_enc2: #check if it's a matrix to be recovered
-        c_rebuilt_mat = [[] for i in range(row)] 
-        k = 0
-        for i in range(row):
-            for j in range(col):
-                c_rebuilt_mat[i].append(c_rebuilt[(k)*len_enc2:(k+1)*len_enc2]) 
-                k += 1
-
-        c_rebuilt = c_rebuilt_mat #prepare matrix to be outputed
-    
-    return c_rebuilt
-
-
-
-def hom_mul(q, c1, c2):
-    ''' This function performs the multiplication of two homomorphically encrypted values, c2 must be encrypted using the function "enc2" using NUMPY '''
-    
-    c1_np = np.array(c1, dtype = object)
-    c2_np = np.array(c2, dtype = object)
-
-    c1_np = decomp(q, c1_np)
-
-    #x = np.zeros([1, c2_np.shape[1]], dtype = object)
-    
-    x = np.dot(c1_np, c2_np) 
-
-    return x.tolist()[0]
-
-
-def hom_mul_mat(q, N, c1, c2):
-    ''' This function performs the multiplication of a homomorphically encrypted matrix with a vector, c2 must be encrypted using the function "enc2" '''
-    
-    n4 = len(c1)
-    n3 = len(c1[0])
-    #n2 = len(c1[0][0])
-    #n1 = len(c1[0][0][0])
-
-    #c1 = decomp(q, c1)
-
-    #Mm=[[0]*(N+1)]*n4
-
-    Mm_np = np.zeros((n4,N+1), dtype = object)
-
-    #multiplied = [0]*len(Mm[0])
-    #multiplied_np = np.zeros((1,n1), dtype = object)
-
-
-    dec_c2 = decomp(q, c2)
-    
-    for i in range(n4):
-        for j in range(n3):
-            #temp1 = Mm_np[i]
-            temp2 = dec_c2[j]
-            temp3 = c1[i][j]
-
-            multiplied = np.dot(temp2, temp3)
-
-            added = Mm_np[i] + multiplied
-
-            Mm_np[i] = mod_hom(added,q)
-
-
-    return Mm_np.tolist()
-
-def smart_scaling(input, scal = 100):
-    '''
-    This function scales it's input (z_values) until all values reach a minimum amount set by the input "scal"
-    @param input: matrix to be scaled an array of arrays: np.array([[1,2],[1,2]])
-    @param scal: lowest value desired (usually a power of 10)
-    @return: the input scaled up
-    '''
-
-    low = abs(input) < 0.0001 #This is to take away values that are too small that would otherwise break this process
+        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
+        >>> enc_m = my_key.encrypt([2])
+        >>> enc_m 
+        array([[-389913.0, 172905.0, -83785.0, -158262.0, 315695.0, -456781.0]], dtype=object)
             
-    input[low] = scal #replace the values that are to small with the scal value to avoid the algorithm trying to scale them up
+        """
 
-    values = [] #initialize list to save the scaling values
+        n = len(m)
+        
+        #A = np.rint(self.rand_set_np.uniform(low = 0, high = self.q_float, size=(n, self.N)), dtype=np.float64)
+        A = self.rand_set_np.uniform(low = 0, high = self.q_float, size=(n, self.N))
+        A_list = [[int(i) for i in inner] for inner in A]
+        A = np.array(A_list, dtype=object)
 
-    for i in range(len(input[0])):
-        store = 1 #initialize variable to record the amount scaled up
+        m = np.array(m, ndmin=2).T
 
-        while np.any(abs(input[:, i])<=scal):
+        temp_rand= self.rand_set_np.randint(low = 1, high = self.r, size = [n,1])
+
+        e = modulus(temp_rand, self.r, neg = True)
+
+        b = np.dot(-A, self.secret_key_np)
+
+
+        add = np.add(self.L*m,e)
+
+        b = b+add
+
+        A = np.append(b, A, axis=1) #appends the calculated variable "b" to the randomly generated array "A"
+
+        
+        ciphertext = modulus(A, self.q, neg=True)
+
+
+        return ciphertext #[list(map(long,i)) for i in ciphertext] 
+
+
+
+
+    def process_test(self):
+        mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = object)
+
+    def process_test2(self):
+        mat_zeros_np = np.zeros(self.lq*(self.N+1)).astype(object)
+
+
+
+    def encrypt2(self, m): #This function encrypts the values to be homomorphically multiplied
+        """
+        Encrypts message in plaintext form using enc2, used to encrypt the multiplicand in c1*c2 
+        
+        Parameters
+        ----------
+        m : int or list?
+            plaintext message to be encrypted
+
+        Returns
+        -------
+        x : numpy.array, shape (len(m),N)
+
+        Examples
+        --------
+        To encrypt a value after initializing KEY:
+
+        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
+        >>> enc_m = my_key.encrypt2([2])
+        >>> enc_m 
+        array([[-389913.0, 172905.0, -83785.0, -158262.0, 315695.0, -456781.0]], dtype=object)
             
-            input[:, i] *= 10
+        """
+    
+        mat_zeros_enc = self.encrypt(self.mat_zeros_np.tolist())
 
-            store *= 10 
-
-        values.append(store)
-
-    input[low] = 1 #replace the undesired small values previously identified by 1
-
-    if min(values[1:3]) == max(values[1:3]):
-        pass
-
-    else:
+        hold_1 = np.multiply(m,self.R)
         
-        #index_max = values[1:3].index(max(values[1:3]))+1 #middle values must be scaled to the same amount
+        hold = np.add(hold_1, mat_zeros_enc)
 
-        high = max(values[1:3])
-
-        low = min(values[1:3])
+        #ciphertext = np.empty((len(mat_zeros_enc[0]), len(mat_zeros_enc)), dtype = object)
         
-        index_min = values[1:3].index(low)+1
+        ciphertext = modulus(hold, self.q, neg=True)
 
-        difference = high/low
+        return ciphertext.tolist()
 
-        input[:, index_min] *= difference
+    
+    def enc_2_mat(self, m): #This function encrypts the values of a matrix to be homomorphically multiplied
+        n1 = len(m)
+        n2 = len(m[0])
 
-        values[index_min] = high
+        cA = np.zeros((n1, n2, int(math.log10(self.q)*(self.N+1)), self.N+1)).astype(int).tolist()
 
-    scaling = values[0]*values[1]*values[2]
+        for i in range(n1):
+            for j in range(n2):
+                cA[i][j] = self.encrypt2([m[i][j]])
+                #could just use the insert syntax instead of assigning the whole matrix
 
-    return input, scaling
+        return cA
 
-    ##THIS FUNCTION COULD HAVE A PROBLEM WITH THE VARIABLE BEING NAMED "INPUT"
+    def decrypt(self, c):
+        '''
+        decrypts a homomorphically encrypted value
+        
+        Parameters
+        ----------
+        c : int or list?
+            ciphetext message to be derypted
+
+        Returns
+        -------
+        x : numpy.array, shape (len(m),N)
+
+        Examples
+        --------
+        To encrypt a value after initializing KEY:
+
+        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
+        >>> enc_m = my_key.encrypt([2])
+        >>> dec_m = my_key.decrypt(enc_m)
+        >>> dec_m 
+        array([[2]], dtype=object)
+        '''
+
+        c_np = np.array(c, dtype = object)
+        
+
+        dot = np.dot(c_np, self.secret_key_np_dec)
+
+        plain = modulus(dot, self.L*self.p, neg = True).astype(float) #should this be self.q instead?
+
+        plaintext_np = plain/self.L
+
+        if type(plaintext_np) != float:
+            plaintext_np = np.around(plaintext_np).astype(int)
+        else:
+            plaintext_np = round(plaintext_np)
+            plaintext_np = int(plaintext_np)
 
 
-def log_scaling(vk, sp_vk):
-    '''
-    This function scales it's input (z_values) until all values reach a minimum amount set by the input "scal"
-    @param input: matrix to be scaled an array of arrays: np.array([[1,2],[1,2]])
-    @param scal: lowest value desired (usually a power of 10)
-    @sp_vk = desired significant figures
-    '''
-    #if type(vk) == float:
-    vk = np.array(vk, dtype = np.float)[np.newaxis]
-    #else:
-    #    a=1
+        #print(plaintext_np.tolist())
+        return plaintext_np.tolist()
 
-    sp_vk = np.array(sp_vk)
 
-    #vk = np.array(vk, dtype = object)
+    def prep_pub_ros_str(self, c):
+        '''used to convert a list to a string to publish encrypted values in ROS'''
 
-    test = np.abs(vk[np.nonzero(vk)]).min()
+        array_into_string = json.dumps(c)
+        
+        return array_into_string
 
-    flr = np.floor(np.log10(np.abs(test))).astype(int)
-    flr = np.full((vk.shape[0], vk.shape[1]), flr, dtype=object)
+    def recvr_pub_ros_str(self, c):
+        '''used to convert a string to a list that was previously modified using the method "prep_pub_ros_str()"'''
 
-    tens = np.full((vk.shape[0], vk.shape[1]), 10, dtype=object) #array od 10's 
- 
-    S_vk = tens**(sp_vk-flr-1) #Shoud scale all numbers by the same?  
- 
-    VK = (vk*S_vk).astype(int)
+        pub_list = json.loads(c)
+            
+        return pub_list
 
-    #VK = VK-np.mod(vk, 1) #Remove Decimals
-    #VK = [long(i) for i in np.around(VK, decimals =0)]
 
-    return VK, S_vk[0][0]
+    def output_key_to_csv(self, robot):
+        '''
+        Outputs generated secret key to a csv file
+        
+        Parameters
+        ----------
+        robot : int
+            number of Nexus robot the key belongs to (used in output filename)
 
-    ##THIS FUNCTION COULD HAVE A PROBLEM WITH THE VARIABLE BEING NAMED "INPUT"
+        Examples
+        --------
+        To encrypt a value after initializing KEY:
 
+        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
+        >>> my_key.output_key_to_csv(1)
+        '''
+
+        PATH = os.path.dirname(os.path.abspath(__file__)) #rospack.get_path(ros_package)
+        FILEPATH = os.path.join(PATH, 'private_key_'+str(robot)+'.csv')
+
+        with open(FILEPATH, "w") as output:
+            writer = csv.writer(output, delimiter=',')
+            for val in self.sk:
+                writer.writerow([val])
+
+    def read_key_from_csv(self, robot):
+
+        sk = []
+
+        PATH = os.path.dirname(os.path.abspath(__file__)) #rospack.get_path(ros_package)
+        FILEPATH = os.path.join(PATH, 'private_key_'+str(robot)+'.csv')
+
+        with open(FILEPATH, 'rb') as f: #This section reads the csv file to gather the private key to encrypt
+            reader = csv.reader(f, delimiter='\n')
+            lis = list(reader)
+            for i in lis:
+                sk.append(eval(i[0]))
+
+        self.secret_key = sk
+
+    def log_scaling(self, vk, sp_vk):
+        """
+        This function scales its input (z_values) until all values reach a minimum amount set by the input "scal"
+
+        Parameters
+        ----------
+        vk : int or list?
+            message to be scaled
+        sp_vk : int
+            desired significant figures
+
+        Returns
+        -------
+        VK : numpy.array, shape (len(m),N)
+            scaled message
+        sp_vk : int?
+            scaling amount
+
+        Examples
+        --------
+        To scale a value after initialing KEY:
+
+        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
+        >>> p = 2.5
+        >>> scaled_p = my_key.log_scaling(p, 3)
+        >>> scaled_p
+        250
+        """
+
+        #if type(vk) == float:
+        vk = np.array(vk, dtype = float)[np.newaxis]
+        #else:
+        #    a=1
+
+        sp_vk = np.array(sp_vk)
+
+        #vk = np.array(vk, dtype = object)
+
+        test = np.abs(vk[np.nonzero(vk)]).min()
+
+        flr = np.floor(np.log10(np.abs(test))).astype(int)
+        flr = np.full((vk.shape[0], vk.shape[1]), flr, dtype=object)
+
+        tens = np.full((vk.shape[0], vk.shape[1]), 10, dtype=object) #array od 10's 
+    
+        S_vk = tens**(sp_vk-flr-1) #Shoud scale all numbers by the same?  
+    
+        VK = (vk*S_vk).astype(int)
+
+        #VK = VK-np.mod(vk, 1) #Remove Decimals
+        #VK = [long(i) for i in np.around(VK, decimals =0)]
+
+        return VK, S_vk[0][0]
+
+
+
+
+class HOM_OP:
+    """
+    This class contains all necessary methods to multiply two homomorphically encrypted ciphertexts
+    """
+
+    def __init__(self, p = 10**13, L = 10**3, r=10**1, N = 50, seed=None):
+        """Initialize the HOM_OP class to encrypt and decrypt numbers.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        Examples
+        --------
+        Initilize the HOM_OP class with:
+
+        >>> hom_operator = HOM_OP()
+
+        To multiply ciphertexts "c1*c2":
+
+        >>> enc_m = hom_operator.multiply(c1,c2)
+
+        """
+
+        self.q = p * L 
+        self.p = p
+        self.L = L
+        self.r = r
+        self.N = N
+
+        self.lq = int(math.log10(self.q)) #used in "decomp" method
+
+
+    def decomp(self, c1): #function to carry out before multiplying used by the function "hom_mul"
+
+
+        c1_np = modulus(c1, self.q)
+
+        BBB=np.zeros((c1_np.shape[0],0), dtype = object)
+
+        for i in range(self.lq):
+
+            dum = int(10**(self.lq-1-i))
+
+            Q_np = np.mod(c1_np, dum)
+            
+            Q_np = np.subtract(c1_np, Q_np)
+
+            BBB = np.append(Q_np//dum, BBB, axis= 1) # "//" (true_divide) is used to ensure the output of the division is integers and not floats
+
+            #c1 = [j - k for j, k in zip(c1,Q)]
+            
+            c1_np = np.subtract(c1_np,Q_np)
+
+        return BBB
+
+
+    def hom_multiply(self, c1, c2):
+        ''' This function performs the multiplication of two homomorphically encrypted values, c2 must be encrypted using the function "enc2" using NUMPY '''
+        
+        c1_np = np.array(c1, dtype = object)
+        c2_np = np.array(c2, dtype = object)
+
+        c1_np = self.decomp(c1_np)
+
+        #x = np.zeros([1, c2_np.shape[1]], dtype = object)
+        
+        x = np.dot(c1_np, c2_np) 
+
+        return x.tolist()[0]
+
+
+    def hom_mul_mat(self, c1, c2):
+        ''' This function performs the multiplication of a homomorphically encrypted matrix with a vector, c2 must be encrypted using the function "enc2" '''
+        
+        n4 = len(c1)
+        n3 = len(c1[0])
+        #n2 = len(c1[0][0])
+        #n1 = len(c1[0][0][0])
+
+        #c1 = decomp(q, c1)
+
+        #Mm=[[0]*(N+1)]*n4
+
+        Mm_np = np.zeros((n4,self.N+1), dtype = object)
+
+        #multiplied = [0]*len(Mm[0])
+        #multiplied_np = np.zeros((1,n1), dtype = object)
+
+
+        dec_c2 = self.decomp(c2)
+        
+        for i in range(n4):
+            for j in range(n3):
+                #temp1 = Mm_np[i]
+                temp2 = dec_c2[j]
+                temp3 = c1[i][j]
+
+                multiplied = np.dot(temp2, temp3)
+
+                added = Mm_np[i] + multiplied
+
+                Mm_np[i] = modulus(added,self.q, neg=True)
+
+
+        return Mm_np.tolist()
+
+
+
+
+
+
+
+
+#TODO: Review code below. The remaining code below is a translation of Matlab code provided by Junsoo Kim, that could help speed up
+#some processes, but at the moment it is not applicable
+
+###################################################################################################################
 
 def enc_matlab(p, L, q, r, N, secret_key, mat_inp): #function from Matlab code for ITH (not for matrices)
     '''
@@ -971,6 +972,8 @@ def mult(q, c, C):
 
     
     return y
+
+
 
 if __name__ == '__main__':
     main()
