@@ -11,8 +11,8 @@ import os
 import math
 from operator import add
 
-from pymomorphic3 import pymomorphic_py2 as pymorph2
-from pymomorphic3 import pymomorphic_py3 as pymorph3
+from pymomorphic import pymomorphic_py2 as pymorph2
+from pymomorphic import pymomorphic_py3 as pymorph3
 
 import time
 import json #used to convert list to string, used to send messages through ROS, as it does not support values larger than int64

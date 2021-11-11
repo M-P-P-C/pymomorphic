@@ -1,8 +1,8 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='pymomorphic3',
-    packages=find_packages(include=['pymomorphic3']),
+    name='pymomorphic',
+    packages=find_packages(include=['pymomorphic']),
     version='0.2.0',
     description='A Python library of functions to perform homomorphic encryption, decryption and multiplication',
     author='Mariano Perez Chaher',

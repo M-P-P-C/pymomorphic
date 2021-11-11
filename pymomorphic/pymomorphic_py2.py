@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 """
-``pymomorphic3.pymomorphic_py2``
+``pymomorphic.pymomorphic_py2``
 ================
 
 This pymomorphic_py2 package provides functions to homomorphically encrypt and
@@ -41,7 +41,6 @@ import timeit
 import numpy as np
 import random #used to generate random arrays used in the encryption process
 import csv
-#import rospkg #this pac
 import json #used to convert lists to strings, used to send messages through ROS, as it does not support values larger than int64
 
 import math

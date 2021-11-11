@@ -1,7 +1,7 @@
 
 import unittest
 
-from pymomorphic3 import pymomorphic_py2 as pmh
+from pymomorphic import pymomorphic_py2 as pmh
 
 import numpy as np
 

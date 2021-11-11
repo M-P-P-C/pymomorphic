@@ -1,37 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-``pymomorphic3.pymomorphic_py3``
-================
-
-This pymomorphic_py3 package provides functions to homomorphically encrypt and
-operate on data using Python 3. Refer to pymomorphic_py2 to use with Python2.
-
-This package contains the following functions:
-
-Encryption/Decryption
----------------------
-
-    key_generate
-    encrypt
-    encrypt2
-    enc_2_mat
-    log_scaling
-    decrypt
-
-Data Manipulation
------------------
-
-    modulus
-
-ROS publication
----------------
-
-    prep_pub_ros_str
-    recvr_pub_ros_str
-
-"""
-
 import sys
 import warnings
 import os
@@ -41,17 +9,16 @@ import timeit
 import numpy as np
 import random #used to generate random arrays used in the encryption process
 import csv
-#import rospkg #this pac
+#import rospkg
 import json #used to convert lists to strings, used to send messages through ROS, as it does not support values larger than int64
 
 import math
 from operator import add
 import secrets
 
-#TODO: add check to ensure input arguments are integers
-#TODO: update functions to accept integers instead of just lists, for ease of use.
-#TODO: write test functions to ensure everything works when compiling packages
 
+
+#add check to ensure input arguments are (integers) and warning
 
 def main():
 
@@ -60,14 +27,15 @@ def main():
     my_L = 10**3
     my_r = 10**1
     my_N = 5
-
-    #integers to encrypt and multiply
     m = [20]
     m2 = [600]
     
-    #initialize KEY and HOM_OP
     my_key = KEY(p = my_p , L = my_L, r = my_r , N = my_N)
+
     my_operator = HOM_OP(p = my_p, L = my_L, r = my_r , N = my_N)
+
+    test = np.array([-0.92506512, 0])
+    my_key.log_scaling(test, 3)
 
 
     my_c = my_key.encrypt(m)
@@ -89,55 +57,85 @@ def main():
     print("Expected Result:       " + str(m[0]*m2[0]))
 
     
-    #arrays to encrypt and multiply
-    M = [[10, 20, 30], [3, 4, 5]]
-    M2 = [100, 100, 100]
 
-    my_C = my_key.enc_2_mat(M)
-
-    my_C2 = my_key.encrypt(M2)
-
-    
-    my_C_mult = my_operator.hom_mul_mat(my_C, my_C2)
-
-
-    my_P_mult = my_key.decrypt(my_C_mult)
-
-    print("\n")
-    print("Expected Mult Result: " + str(np.dot(np.array(M),np.array(M2))))
-    print("Decrypted Matrix Mult Result: " + str(my_P_mult))
-
-
-    array_to_publish = my_key.prep_pub_ros_str([[1,2,3,4,5]])
-    string_array = my_key.recvr_pub_ros_str(array_to_publish)
-
-    print("\n")
-    print("Array to publish in ROS " + array_to_publish)
-    print("String array turned into a list " + str(string_array))
-
-    #test log scaling function
-    array_to_log_scale = np.array([-0.92506512, 0])
-    array_scaled = my_key.log_scaling(array_to_log_scale, 3)
-
-    print("\n")
-    print("Array to scale " + str(array_to_log_scale))
-    print("String array turned into a list " + str(array_scaled))
-
-    #functions to time any tasks in "process_test" method
     #timeit.timeit(my_key.process_test)
     #timeit.timeit(lambda:my_key.encrypt2([20]), number = 1000)
 
-    #example of z_values obtained with 3 neighboring robots in ROS
-    #z_values = np.array([[ 0.00934644, -0.05645715, -0.80737489,  1.23556484], [-0.00632714,  0.67307276, -0.42058253,  1.25996497],[0.01942838,  0.72351229,  0.38469833,  1.2203629 ]])
+            
 
+    #mult(281474976710655, [1,3], [[158777085946917,68804555223388,53304918513469], [109973083742059,71648586144056,25010707954525]])
+    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
+    #enc_mat(var.p, var.L, var.q, var.r, var.N, sk, [1,2,3]) 
+    #dec_mat(var.p, var.L, var.q, var.r, var.N, sk, enc_mat) 
 
+    #start_encmat = time.time()
+    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist())
+    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(10, dtype = int).tolist())
+    #end_encmat = time.time()
+    
+
+    #te=prep_pub_ros_str(multiplied)
+    #recvr_pub_ros_str(te)
 
     #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
 
-    #cx22 = enc1_to_enc2(var.p, var.L, var.q, var.r, var.N, cx) #a function that transforms variables in enc2 form to enc1
+
+    #print "\n"
+    #print "Variable 1 in it's encrypted form: " #Expected = [[-49807360L, 77641302L, -495364491, -338818076, 128598971L, 405696980L]]
+
+    #print ciphertext
+
+    
+    #print timeit.timeit(enc_1_np(var.p, var.L, var.q, var.r, var.N, sk, m), number=100)
+
+    #plt.savefig('times.png')
+    #plt.ioff()
+
+    #example of z_values obtained with 3 neighboring robots
+    #z_values = np.array([[ 0.00934644, -0.05645715, -0.80737489,  1.23556484], [-0.00632714,  0.67307276, -0.42058253,  1.25996497],[0.01942838,  0.72351229,  0.38469833,  1.2203629 ]])
+
+    #z_values_scal, scal = smart_scaling(z_values, 100)
+    
+    #print z_values_scal
+
+    #mm = [[237512851739963],[14658622955356],[229124840490966],[205100029880339],[227934635643093],[17846780355862],[55389962772409],[263011659097926],[119115587787204],[241769783421970],[129441262599146],[144502896940715],[226371045488786],[112192969310834],[255391071669921],[8694635013588],[27044624173938],[84810117512235],[335280182744],[93713232175970],[15595059329443],[182451631363946],[133244670283093],[237060086616293]]
+    
+    #tt = splitm(3, 16, 65535,mm)
+
+    #I need to test all functions for all possible combinations of list types and make sure they work properly and give always the same output
+
+    #m = [[1000,2000],[2000,3000]]
+    #res = enc_gains(sk, m)
+
+    #OMFG = hom_mul_mat(res, tt)
+
+    F = [[10, 20, 30], [3, 4, 5]]
+
+    #F = [[1,54]]
+    x = [100, 100, 100]
+
+    
+    cF = enc_2_mat(var.p, var.L, var.q, var.r, var.N, sk, F)
+    
+    cx = enc_1(var.p, var.L, var.q, var.r, var.N, sk, x)
+    
+    #cx22 = enc1_to_enc2(var.p, var.L, var.q, var.r, var.N, cx)
+    start_matmult = time.time()
+    cFcx = hom_mul_mat(var.q,var.N, cF,cx) #[[1,2],[3,4]]*[1,2] is [[1,2],[3,4]]*[[1],[2]]
+    end_matmult = time.time()
 
 
+    print("\n")
+    print("Expected Mult Result: " + str(np.dot(np.array(F),np.array([[100], [100], [100]]))))
+    print("Decrypted Matrix Mult Result: " + str(dec_hom(var.p, var.L, sk, cFcx)))
 
+    time_matmult = end_matmult - start_matmult
+    print("\n")
+    print("Time Matrix Mult " + str(time_matmult)) #Fast
+
+    to_pub = prep_pub_ros(var.q, var.N, [[1,2,3,4,5]])
+    to_pub = prep_pub_ros(var.q, var.N,  cF)
+    recovered = recvr_pub_ros(var.q, var.N, to_pub, 2, 3)
 
 
 def modulus(a, b, neg = False):
@@ -216,10 +214,9 @@ class KEY:
         """
 
         self.rand_set = random 
-        self.rand_set_np = np.random #Initialize numpy's random package to determine if a seed is assigned or not
+        self.rand_set.seed(seed) #This is used to generate the same key for the encryption and decryption scripts.
 
-        #For DEBUG purposes only:
-        self.rand_set.seed(seed) #These are used to generate the same key for the encryption and decryption scripts.
+        self.rand_set_np = np.random #Initialize numpy's random package to determine if a seed is assigned or not
         self.rand_set_np.seed(seed)
         
         #Store input variables as class attributes
@@ -229,19 +226,18 @@ class KEY:
         self.r = r
         self.N = N
 
-        #convert q to float to use in functions that don't accept large integers
         self.q_float = float(self.q)
 
         #Warn user if plaintext space is larger than int64, which could cause problems
         if self.q > sys.maxsize: #or maxint
-            warnings.warn("plaintext space exceeds int64", Warning) #FIXME: this process needs checking
+            warnings.warn("plaintext space exceeds int64", Warning)
 
 
         self.secret_key = self.key_generate() #generate secret key for encryption.
-        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
+        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T
 
         #Initialize a variable used for the method "decryption"
-        self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with "1" appended to its start used in the decryption process
+        self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with 1 appended to it's start used in the decryption process
 
         #Initialize three variables used for the method "encryption2"
         self.lq = int(math.log10(self.q))
@@ -384,7 +380,7 @@ class KEY:
 
         for i in range(n1):
             for j in range(n2):
-                cA[i][j] = self.encrypt2([m[i][j]])
+                cA[i][j] = self.enc_2([m[i][j]])
                 #could just use the insert syntax instead of assigning the whole matrix
 
         return cA
@@ -411,6 +407,7 @@ class KEY:
         >>> dec_m = my_key.decrypt(enc_m)
         >>> dec_m 
         array([[2]], dtype=object)
+
         '''
 
         c_np = np.array(c, dtype = object)
@@ -433,22 +430,22 @@ class KEY:
         return plaintext_np.tolist()
 
 
-    def output_key_to_csv(self, robot):
-        '''
-        Outputs generated secret key to a csv file
+    def prep_pub_ros_str(c):
+        '''used to convert a list to a string to publish encrypted values in ROS'''
+
+        string = json.dumps(c)
         
-        Parameters
-        ----------
-        robot : int
-            number of Nexus robot the key belongs to (used in output filename)
+        return string
 
-        Examples
-        --------
-        To encrypt a value after initializing KEY:
+    def recvr_pub_ros_str(c):
+        '''used to convert a string to a list that was previously modified using the method "prep_pub_ros_str()"'''
 
-        >>> my_key = KEY(p = 10**3, L = 10**3, r=10**1, N = 5)
-        >>> my_key.output_key_to_csv(1)
-        '''
+        pub_list = json.loads(c)
+            
+        return pub_list
+
+
+    def output_key_to_csv(self):
 
         PATH = os.path.dirname(os.path.abspath(__file__)) #rospack.get_path(ros_package)
         FILEPATH = os.path.join(PATH, 'private_key_'+str(robot)+'.csv')
@@ -458,7 +455,7 @@ class KEY:
             for val in self.sk:
                 writer.writerow([val])
 
-    def read_key_from_csv(self, robot):
+    def read_key_from_csv(self):
 
         sk = []
 
@@ -489,7 +486,7 @@ class KEY:
         VK : numpy.array, shape (len(m),N)
             scaled message
         sp_vk : int?
-            scaling amount
+            scaling amoung
 
         Examples
         --------
@@ -503,7 +500,7 @@ class KEY:
         """
 
         #if type(vk) == float:
-        vk = np.array(vk, dtype = float)[np.newaxis]
+        vk = np.array(vk, dtype = np.float)[np.newaxis]
         #else:
         #    a=1
 
@@ -526,6 +523,8 @@ class KEY:
         #VK = [long(i) for i in np.around(VK, decimals =0)]
 
         return VK, S_vk[0][0]
+
+
 
 
 
@@ -568,7 +567,10 @@ class HOM_OP:
     def decomp(self, c1): #function to carry out before multiplying used by the function "hom_mul"
 
 
-        c1_np = modulus(c1, self.q)
+        #c1_np = mod_hom2_np(c1, q)
+        #print "ERROR c1 " + str(c1)
+
+        c1_np = np.mod(c1, self.q)
 
         BBB=np.zeros((c1_np.shape[0],0), dtype = object)
 
@@ -604,7 +606,7 @@ class HOM_OP:
         return x.tolist()[0]
 
 
-    def hom_mul_mat(self, c1, c2):
+    def hom_mul_mat(q, N, c1, c2):
         ''' This function performs the multiplication of a homomorphically encrypted matrix with a vector, c2 must be encrypted using the function "enc2" '''
         
         n4 = len(c1)
@@ -616,7 +618,7 @@ class HOM_OP:
 
         #Mm=[[0]*(N+1)]*n4
 
-        Mm_np = np.zeros((n4,self.N+1), dtype = object)
+        Mm_np = np.zeros((n4,N+1), dtype = object)
 
         #multiplied = [0]*len(Mm[0])
         #multiplied_np = np.zeros((1,n1), dtype = object)
@@ -640,44 +642,47 @@ class HOM_OP:
         return Mm_np.tolist()
 
 
+    def process_test(self):
 
-def prep_pub_ros_str(self, c):
-    '''Used to convert a list to a string to publish encrypted values in ROS
-    
-    Parameters
-    ----------
-    c : list
-    
-    Returns
-    -------
-    array_into_string: string
-    '''
+        Q_np = np.array([[8782623216192, 82290688562644, 24050809033837, 4556704189207,
+        81240272963829, 78318174827304, 20525199198674, 35216105868855,
+        5532596056824, 26715085180538, 54726712401807, 67434616998301,
+        14766234457878, 6239032352762, 28712806041169, 64265539557219,
+        17225986654082, 19139763491699, 43004204679282, 32758825713489,
+        35201138860222, 97951412908184, 50994202146731, 791572794012,
+        74531805743645, 19675944407054, 75846446149528, 14642509756305,
+        63345903946123, 56360276284193, 42053699266561, 69405575096656,
+        18845912609469, 86407502394888, 92817110905305, 58414422484087,
+        94328446196364, 35026574011514, 51604990711990, 52620171897821,
+        34559945043648, 91907886569462, 63053506026236, 27615824370433,
+        87318769672194, 7685920676361, 54580703950411, 83945052326522,
+        94928588215957, 24871629844108, 82834278175071]], dtype=object)
+        dum = 100000000000000
+        Q_np/dum
 
-    array_into_string = json.dumps(c)
-    
-    return array_into_string
+    def process_test2(self):
 
-def recvr_pub_ros_str(self, c):
-    '''used to convert a string to a list that was previously modified using the method "prep_pub_ros_str()"
-    
-    Parameters
-    ----------
-    c : string
-    
-    Returns
-    -------
-    pub_list: list
-    '''
-
-    pub_list = json.loads(c)
-        
-    return pub_list
+        Q_np = np.array([[8782623216192, 82290688562644, 24050809033837, 4556704189207,
+        81240272963829, 78318174827304, 20525199198674, 35216105868855,
+        5532596056824, 26715085180538, 54726712401807, 67434616998301,
+        14766234457878, 6239032352762, 28712806041169, 64265539557219,
+        17225986654082, 19139763491699, 43004204679282, 32758825713489,
+        35201138860222, 97951412908184, 50994202146731, 791572794012,
+        74531805743645, 19675944407054, 75846446149528, 14642509756305,
+        63345903946123, 56360276284193, 42053699266561, 69405575096656,
+        18845912609469, 86407502394888, 92817110905305, 58414422484087,
+        94328446196364, 35026574011514, 51604990711990, 52620171897821,
+        34559945043648, 91907886569462, 63053506026236, 27615824370433,
+        87318769672194, 7685920676361, 54580703950411, 83945052326522,
+        94928588215957, 24871629844108, 82834278175071]], dtype=object)
+        dum = 100000000000000
+        Q_np//dum
 
 
 
 
-#TODO: Review code below. The remaining code below is a translation of Matlab code provided by Junsoo Kim, that could help speed up
-#some processes, but at the moment it is not applicable
+
+
 
 ###################################################################################################################
 
