@@ -32,22 +32,6 @@ def main():
     #timeit.timeit(xxx.process_test)
 
     measure_performance_enc('N')
-    #print "main function called, this function is used when trying to debug this script. It get's executed when running the file directly"
-
-
-
-    #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
-
-    print("\n")
-    print("Decrypted Variable 1: " + str(dec_hom(var.p, var.L, sk, [ciphertext])[0][0]))
-    print("Multiplication Result: " + str(dec_hom(var.p, var.L, sk, [multiplied])[0][0]))
-    print("Expected Result:       " + str(m[0]*m2[0]))
-    #print "\n"
-    #print "Variable 1 in it's encrypted form: " #Expected = [[-49807360L, 77641302L, -495364491, -338818076, 128598971L, 405696980L]]
-
-    #print ciphertext
-
-
 
     functions=['Enc1', 'Enc2', 'Mult', 'Dec']
     slow_data=[time_enc1,time_enc2,time_mult, time_dec]
@@ -74,62 +58,6 @@ def main():
     ax=sns.barplot(data=data, x="Step", y="time", hue="mode")
     #plt.show()'''
     
-    import timeit
-    #print timeit.timeit(enc_1_np(var.p, var.L, var.q, var.r, var.N, sk, m), number=100)
-
-    #plt.savefig('times.png')
-    #plt.ioff()
-
-    #example of z_values obtained with 3 neighboring robots
-    #z_values = np.array([[ 0.00934644, -0.05645715, -0.80737489,  1.23556484], [-0.00632714,  0.67307276, -0.42058253,  1.25996497],[0.01942838,  0.72351229,  0.38469833,  1.2203629 ]])
-
-    #z_values_scal, scal = smart_scaling(z_values, 100)
-    
-    #print z_values_scal
-
-    #mm = [[237512851739963],[14658622955356],[229124840490966],[205100029880339],[227934635643093],[17846780355862],[55389962772409],[263011659097926],[119115587787204],[241769783421970],[129441262599146],[144502896940715],[226371045488786],[112192969310834],[255391071669921],[8694635013588],[27044624173938],[84810117512235],[335280182744],[93713232175970],[15595059329443],[182451631363946],[133244670283093],[237060086616293]]
-    
-    #tt = splitm(3, 16, 65535,mm)
-
-    #I need to test all functions for all possible combinations of list types and make sure they work properly and give always the same output
-
-    #m = [[1000,2000],[2000,3000]]
-    #res = enc_gains(sk, m)
-
-    #OMFG = hom_mul_mat(res, tt)
-
-    F = [[10, 20, 30], [3, 4, 5]]
-
-    #F = [[1,54]]
-    x = [100, 100, 100]
-
-    
-    cF = enc_2_mat(var.p, var.L, var.q, var.r, var.N, sk, F)
-    
-    cx = enc_1(var.p, var.L, var.q, var.r, var.N, sk, x)
-    
-    #cx22 = enc1_to_enc2(var.p, var.L, var.q, var.r, var.N, cx)
-    start_matmult = time.time()
-    cFcx = hom_mul_mat(var.q,var.N, cF,cx) #[[1,2],[3,4]]*[1,2] is [[1,2],[3,4]]*[[1],[2]]
-    end_matmult = time.time()
-
-
-    print("\n")
-    print("Expected Mult Result: " + str(np.dot(np.array(F),np.array([[100], [100], [100]]))))
-    print("Decrypted Matrix Mult Result: " + str(dec_hom(var.p, var.L, sk, cFcx)))
-
-    time_matmult = end_matmult - start_matmult
-    print("\n")
-    print("Time Matrix Mult " + str(time_matmult)) #Fast
-
-    to_pub = prep_pub_ros(var.q, var.N, [[1,2,3,4,5]])
-    to_pub = prep_pub_ros(var.q, var.N,  cF)
-    recovered = recvr_pub_ros(var.q, var.N, to_pub, 2, 3)
-
-
-
-
-
 
 
 def measure_performance_enc(self, test_var = 'N', test_func = ["ENC1", "ENC2", "DEC"], m = [380], range_val=[1,210], iter = 20, step = 20):
@@ -319,8 +247,6 @@ def plot_N_fig(df_1, df_2, df_4):
     #test = _BarPlotter(data=data)
 
 
-
-
 def plot_N_calc():
 
     dirpath = os.getcwd()
@@ -376,6 +302,21 @@ def dfassembly(path, variables, names):
         skip += n
     
     return all_data
+
+
+def logarithmic_quantizer(value, sig_fig):
+    """ 
+    Plot logarithmic quantizer equation
+
+    Parameters
+    ----------
+    value : float 
+        value to be scaled up to integer
+    sig_fig : int
+        desired significant figures to plot for
+    """
+    
+    #TODO: Get code from Matlab
 
 if __name__ == '__main__':
     main()
