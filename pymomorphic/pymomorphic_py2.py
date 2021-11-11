@@ -672,6 +672,268 @@ def recvr_pub_ros_str(self, c):
     return pub_list
 
 
+class Matlab_Code:
+    """This class holds alternative methods to compute encryption and decryption provided by Junsoo Kim"""
+
+    def __init__(self, p = 10**13, L = 10**3, r =10**1, N = 50, seed = None):
+
+        self.rand_set = random 
+        self.rand_set_np = np.random #Initialize numpy's random package to determine if a seed is assigned or not
+
+        #For DEBUG purposes only:
+        self.rand_set.seed(seed) #These are used to generate the same key for the encryption and decryption scripts.
+        self.rand_set_np.seed(seed)
+        
+        #Store input variables as class attributes
+        self.q = p * L 
+        self.p = p
+        self.L = L
+        self.r = r
+        self.N = N
+
+        #convert q to float to use in functions that don't accept large integers
+        self.q_float = float(self.q)
+
+        self.secret_key = self.key_generate() #generate secret key for encryption.
+        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
+
+        #Initialize a variable used for the method "decryption"
+        self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with "1" appended to its start used in the decryption process
+
+        #Initialize three variables used for the method "encryption2"
+        self.lq = int(math.log10(self.q))
+        self.R = np.kron(np.power(10, np.arange(self.lq, dtype = object)[:, None]), np.eye(self.N+1, dtype = object)) # "[:, None]" transposes the array made by np.arange
+        self.mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = int)
+
+    def key_generate(self):
+        """
+        This function generates a secret key to encrypt and decrypt values
+        """
+
+        rand = [self.rand_set.randrange(self.q*self.L) for iter in range(self.N)] #for Python 2 since only Python 3 has "secrets"
+
+        sk = modulus(rand, self.q*self.L, neg = True)
+
+        return sk
+
+    def encryption_matlab(self, m):
+        '''
+        This function is to apply LWE encryption to matrices
+        '''
+        #signal_bound = 2
+        #s_G = 2**19
+        #L = 2**26
+
+        n_ = self.N+1
+        mod_g = 2**math.ceil(math.log(2*2*self.L*2**19,2))
+        mod_q = self.q#int(mod_g)
+
+        #d = math.ceil(math.log(mod_q,2)/nu)
+        mod_e = self.r
+        #mod_qe = mod_q-math.ceil(mod_e/2)
+        #mod_qg = mod_q/mod_g
+        mod_q1 = mod_q -1
+
+        #mod_s = 3
+        #s= random.randrange(1,mod_s)
+
+        l2 = len(m) #rows
+        l1 = len(m[0]) if type(m[0]) is list else 1 #columns
+
+        ciphertext = [[0]*l2]*(n_*l1)#[[[0]*l2]*l1*n_ #array of zeros
+
+        from operator import add, sub
+        for i in range(l1):
+            #temp = zeros( n_, l2, 'uint64');
+            temp  = [[0]*l2]*(n_)#[[[0]]*n_]*l2
+
+            #temp(2:n_,:) = uint64(randi(mod_q,n_-1,l2));
+            for j in range(1,n_):
+                rand_vect = [random.randrange(mod_q) for iter in range(l2)]
+                temp[j] = rand_vect
+
+            #temp_e = uint64(randi(mod_e,1,l2))+uint64(mod_qe*ones(1,l2,'uint64'));
+            temp_e1 = [random.randrange(mod_e) for iter in range(l2)]
+            temp_e2 = [mod_q]*l2
+            temp_e =  list( map(add, temp_e1, temp_e2) )
+
+            #temp(1,:) = bitand( mod_q*ones(1,l2,'uint64') - mult(s,temp(2:n_,:))+ uint64(mod_qg*(mod_g+round(m(i,:))))+temp_e ,mod_q1);
+            term = [mod_q]*l2
+            term2 = self.mult(self.q, self.secret_key, temp[1:])[0]
+            dum = m if type(m[0]) is int else m[i]
+            term3 = [j+mod_g for j in dum]
+
+            added = list( map(sub, term, term2) )
+            added2 = list( map(add, term3, temp_e) )
+            added = list( map(add, added, added2) )
+
+            temp[0] = self.bitand([added],mod_q1)[0]
+
+            #c((i-1)*(n_)+1:i*(n_),:) = temp;
+            ciphertext[(i)*(n_):(i+1)*(n_)] = temp
+
+        return ciphertext
+
+
+    def decrypt_matlab(self, c):
+        '''
+        This function is to apply LWE decryption to matrices
+        '''
+
+        signal_bound = 2
+        s_G = 2**19
+        #L = 2**26
+        n=self.N
+        n_ = n+1
+        mod_g = 2**math.ceil(math.log(2*signal_bound*self.L*s_G,2))
+        mod_q = int(mod_g)
+        nu = 16
+        d = math.ceil(math.log(mod_q,2)/nu)
+        mod_e = 2**6+1
+        mod_qe = mod_q-math.ceil(mod_e/2)
+        mod_qg = mod_q/mod_g
+        mod_q1 = mod_q -1
+
+        #q = double(mod_q)
+
+        t= [1]+ self.secret_key
+        l = len([c])/(n+1)
+        y = np.zeros((l, 1)).astype(int).tolist()
+
+        for i in range(0,l):
+            temp = self.mult(t,vv[(i-1)*(n+1)+1:i*(n+1)])
+    
+            m = temp - (temp>=self.q/2) * self.q
+        
+            y[i,1] = round(m * (mod_g/self.q))
+
+        return y
+
+    def mult(self, c, C):
+
+        l1 = len([c])
+        l2 = len(c)
+        l3 = len(C[0])
+
+        y = np.zeros((l1, l3)).astype(int).tolist()
+        
+        for ii in range(0,l3):
+            temp = np.zeros((l1, 1)).astype(int).tolist()
+
+            for i in range(0,l2):
+                temp2 = self.bitand([c[i]*C[i][ii]], self.q)
+                temp = self.bitand( list(map(add, temp[0], temp2[0])), self.q)
+
+            for sublist in y:
+                sublist[ii] = temp[0][0]
+
+        
+        return y
+
+    def bitshift(mat_A, shift):
+        '''
+        A translation of Matlab's bitshift function. returns the element-wise "and" of elements between lists. inputs must be list of lists
+
+        E.G. calculating the bitshift() of 20 = 010100 by 1
+
+        010100
+        
+        101000 =  40
+        '''
+        #mat_A = [[24214,13213],[24214,13213]] 
+        #mat_A = [[206001532940593L]]
+        #mat_A = [[24214,13213]]
+        #mat_A= [[2],[3],[4]]
+
+        shift = 1
+
+        l1 = len(mat_A)
+        l2 = len(mat_A[0]) if type(mat_A[0]) is list else 1
+
+        out = [[0]*l2 for i in range(l1)] #initialize list of lists
+        for k in range(l1):
+            for i in range(l2):
+                
+                if shift > 0:
+                    out[k][i] = mat_A[k][i]<<abs(shift)
+                elif shift < 0:
+                    out[k][i] = mat_A[k][i]>>abs(shift)
+        return out
+
+    def bitand(mat_A, mat_B):
+        '''
+        A translation of Matlab's bitand function. returns the element-wise "and" of elements between lists. inputs must be list of lists
+
+        E.G. calculating the bitand() of 20 = 010100, and 24 = 011000
+
+        010100
+        &&&&&&
+        011000
+        ||||||
+        010000  =  16
+        '''
+        #import pdb
+        #pdb.set_trace()
+
+        #mat_A = [[24214,13213],[24214,13213]] #l1 = 2, l2 = 2
+        #mat_B = 44#[[44, 44], [44,44]]
+        #out = [[4, 12], [4, 12]]
+
+        #mat_A = [206001532940593L] #l1 = 1, l2 = 1
+        #mat_B = 281474976710655L
+        #out = [[206001532940593L]]
+
+        #mat_A = [[24214,13213]] #l1 = 2, l2 = 1
+        #mat_B = 44
+        #out = [[4, 12]]
+
+        #mat_A= [[2],[3],[4]] #l1 = 3, l2 = 1
+        #mat_B= 6
+        #out = [[2], [2], [4]]
+
+        
+
+        l1 = len(mat_A)
+        l2 = len(mat_A[0]) if type(mat_A[0]) is list else 1
+
+        if type(mat_A[0]) is list:
+            mat_B = [[mat_B]*l2]*l1 
+        else:
+            mat_B = [mat_B]*l1 
+
+
+        zzz = [[]]*l1
+        if type(mat_A[0]) is list:   
+            for i in range(len(mat_A)):
+                zzz[i] = zip(mat_A[i],mat_B[i]) 
+        else:
+            zzz = zip(mat_A,mat_B)
+        #zzz = zip(mat_A,mat_B)
+        #print(zzz)
+        j=0
+        out = [[0]*l2 for i in range(l1)] #initialize list of lists
+        for i in range(l1):
+            for k in range(l2):
+                if type(mat_A[0]) is list: #l2>1:
+                    xxx = zzz[i][k]
+                else:
+                    xxx = zzz[k]
+                #zzz = zip(mat_A[i],mat_B[i])
+
+                if type(xxx) is list:
+                    out[i][k] = int(xxx[0][0]) & int(xxx[0][1]) 
+                else:
+                    out[i][k] = int(xxx[0]) & int(xxx[1]) 
+                j=j+1 
+                #    for k in range(len(mat_A[0])):
+                #        out[i][k] = int(zzz[i][k]) & int(zzz[i][k])        
+                
+        #if len(mat_A)==1:
+        #    out = [k & l for k, l in zip(mat_A, mat_B)]
+        #else:
+        #    out = [[k & l for k, l in zip(i, j)] for i, j in zip(mat_A, mat_B)]
+
+        return out
 
 
 #TODO: Review code below. The remaining code below is a translation of Matlab code provided by Junsoo Kim, that could help speed up
@@ -679,97 +941,6 @@ def recvr_pub_ros_str(self, c):
 
 ###################################################################################################################
 
-def enc_matlab(p, L, q, r, N, secret_key, mat_inp): #function from Matlab code for ITH (not for matrices)
-    '''
-    This function is to apply LWE encryption to matrices
-    '''
-    #signal_bound = 2
-    #s_G = 2**19
-    #L = 2**26
-
-    n_ = N+1
-    mod_g = 2**math.ceil(math.log(2*2*L*2**19,2))
-    mod_q = q#int(mod_g)
-
-    #d = math.ceil(math.log(mod_q,2)/nu)
-    mod_e = r
-    #mod_qe = mod_q-math.ceil(mod_e/2)
-    #mod_qg = mod_q/mod_g
-    mod_q1 = mod_q -1
-
-    #mod_s = 3
-    #s= random.randrange(1,mod_s)
-
-    l2 = len(mat_inp) #rows
-    l1 = len(mat_inp[0]) if type(mat_inp[0]) is list else 1 #columns
-
-    c = [[0]*l2]*(n_*l1)#[[[0]*l2]*l1*n_ #array of zeros
-
-    from operator import add, sub
-    for i in range(l1):
-        #temp = zeros( n_, l2, 'uint64');
-        temp  = [[0]*l2]*(n_)#[[[0]]*n_]*l2
-
-        #temp(2:n_,:) = uint64(randi(mod_q,n_-1,l2));
-        for j in range(1,n_):
-            rand_vect = [random.randrange(mod_q) for iter in range(l2)]
-            temp[j] = rand_vect
-
-        #temp_e = uint64(randi(mod_e,1,l2))+uint64(mod_qe*ones(1,l2,'uint64'));
-        temp_e1 = [random.randrange(mod_e) for iter in range(l2)]
-        temp_e2 = [mod_q]*l2
-        temp_e =  list( map(add, temp_e1, temp_e2) )
-
-        #temp(1,:) = bitand( mod_q*ones(1,l2,'uint64') - mult(s,temp(2:n_,:))+ uint64(mod_qg*(mod_g+round(m(i,:))))+temp_e ,mod_q1);
-        term = [mod_q]*l2
-        term2 = mult(q, secret_key, temp[1:])[0]
-        dum = mat_inp if type(mat_inp[0]) is int else mat_inp[i]
-        term3 = [j+mod_g for j in dum]
-
-        added = list( map(sub, term, term2) )
-        added2 = list( map(add, term3, temp_e) )
-        added = list( map(add, added, added2) )
-
-        temp[0] = bitand([added],mod_q1)[0]
-
-        #c((i-1)*(n_)+1:i*(n_),:) = temp;
-        c[(i)*(n_):(i+1)*(n_)] = temp
-
-    return c
-
-def dec_mat(p, L, q, r, N, secret_key, mat_inp):
-    '''
-    This function is to apply LWE decryption to matrices
-    '''
-
-    signal_bound = 2
-    s_G = 2**19
-    #L = 2**26
-    n=N
-    n_ = n+1
-    mod_g = 2**math.ceil(math.log(2*signal_bound*L*s_G,2))
-    mod_q = int(mod_g)
-    nu = 16
-    d = math.ceil(math.log(mod_q,2)/nu)
-    mod_e = 2**6+1
-    mod_qe = mod_q-math.ceil(mod_e/2)
-    mod_qg = mod_q/mod_g
-    mod_q1 = mod_q -1
-
-    #q = double(mod_q)
-
-    t= [1]+ secret_key
-    l = len([mat_inp])/(n+1)
-    y = np.zeros((l, 1)).astype(int).tolist()
-
-    for i in range(0,l):
-        temp = mult(t,c[(i-1)*(n+1)+1:i*(n+1)])
-   
-        m = temp - (temp>=q/2) * q
-    
-        y[i,1] = round(m * (mod_g/q))
-
-        return y
 
 def enc_gains(L, N, secret_key, mat_inp):
     '''
@@ -859,132 +1030,10 @@ def splitm(d, nu, nu2, mat_inp):
     return y
 
 
-def bitshift(mat_A, shift):
-    '''
-    returns the element-wise "and" of elements between lists. inputs must be list of lists
-
-    E.G. calculating the bitshift() of 20 = 010100 by 1
-
-    010100
-    
-    101000 =  40
-    '''
-    #mat_A = [[24214,13213],[24214,13213]] 
-    #mat_A = [[206001532940593L]]
-    #mat_A = [[24214,13213]]
-    #mat_A= [[2],[3],[4]]
-
-    shift = 1
-
-    l1 = len(mat_A)
-    l2 = len(mat_A[0]) if type(mat_A[0]) is list else 1
-
-    out = [[0]*l2 for i in range(l1)] #initialize list of lists
-    for k in range(l1):
-        for i in range(l2):
-            
-            if shift > 0:
-                out[k][i] = mat_A[k][i]<<abs(shift)
-            elif shift < 0:
-                out[k][i] = mat_A[k][i]>>abs(shift)
-    return out
-
-def bitand(mat_A, mat_B):
-    '''
-    returns the element-wise "and" of elements between lists. inputs must be list of lists
-
-    E.G. calculating the bitand() of 20 = 010100, and 24 = 011000
-
-    010100
-    &&&&&&
-    011000
-    ||||||
-    010000  =  16
-    '''
-    #import pdb
-    #pdb.set_trace()
-
-    #mat_A = [[24214,13213],[24214,13213]] #l1 = 2, l2 = 2
-    #mat_B = 44#[[44, 44], [44,44]]
-    #out = [[4, 12], [4, 12]]
-
-    #mat_A = [206001532940593L] #l1 = 1, l2 = 1
-    #mat_B = 281474976710655L
-    #out = [[206001532940593L]]
-
-    #mat_A = [[24214,13213]] #l1 = 2, l2 = 1
-    #mat_B = 44
-    #out = [[4, 12]]
-
-    #mat_A= [[2],[3],[4]] #l1 = 3, l2 = 1
-    #mat_B= 6
-    #out = [[2], [2], [4]]
-
-    
-
-    l1 = len(mat_A)
-    l2 = len(mat_A[0]) if type(mat_A[0]) is list else 1
-
-    if type(mat_A[0]) is list:
-        mat_B = [[mat_B]*l2]*l1 
-    else:
-        mat_B = [mat_B]*l1 
 
 
-    zzz = [[]]*l1
-    if type(mat_A[0]) is list:   
-        for i in range(len(mat_A)):
-            zzz[i] = zip(mat_A[i],mat_B[i]) 
-    else:
-        zzz = zip(mat_A,mat_B)
-    #zzz = zip(mat_A,mat_B)
-    #print(zzz)
-    j=0
-    out = [[0]*l2 for i in range(l1)] #initialize list of lists
-    for i in range(l1):
-        for k in range(l2):
-            if type(mat_A[0]) is list: #l2>1:
-                xxx = zzz[i][k]
-            else:
-                xxx = zzz[k]
-            #zzz = zip(mat_A[i],mat_B[i])
-
-            if type(xxx) is list:
-                out[i][k] = int(xxx[0][0]) & int(xxx[0][1]) 
-            else:
-                out[i][k] = int(xxx[0]) & int(xxx[1]) 
-            j=j+1 
-            #    for k in range(len(mat_A[0])):
-            #        out[i][k] = int(zzz[i][k]) & int(zzz[i][k])        
-              
-    #if len(mat_A)==1:
-    #    out = [k & l for k, l in zip(mat_A, mat_B)]
-    #else:
-    #    out = [[k & l for k, l in zip(i, j)] for i, j in zip(mat_A, mat_B)]
-
-    return out
 
 
-def mult(q, c, C):
-
-    l1 = len([c])
-    l2 = len(c)
-    l3 = len(C[0])
-
-    y = np.zeros((l1, l3)).astype(int).tolist()
-    
-    for ii in range(0,l3):
-        temp = np.zeros((l1, 1)).astype(int).tolist()
-
-        for i in range(0,l2):
-            temp2 = bitand([c[i]*C[i][ii]],q)
-            temp = bitand( list(map(add, temp[0], temp2[0])), q)
-
-        for sublist in y:
-            sublist[ii] = temp[0][0]
-
-    
-    return y
 
 
 
