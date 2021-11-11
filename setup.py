@@ -7,10 +7,10 @@ setup(
     description='A Python library of functions to perform homomorphic encryption, decryption and multiplication',
     author='Mariano Perez Chaher',
     license='MIT',
-    install_requires=[],
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
-    test_suite='pymomorphic3_test',
+    install_requires=['numpy'],
+    setup_requires=[],
+    tests_require=['unittest'],
+    test_suite='tests',
 )
 
 #Activate the python venv with "source pymomorphic3_venv/bin/activate"
