@@ -1,6 +1,7 @@
 # Homomorphic Encryption in Python
 
-This python script was developed as a part of my graduation theses for the University of Groningen.
+This python library was developed as a part of a master graduation theses for the University of Groningen. The functions for Homomorphic Encryption are based on the work by Kim J. in [[1]](#1)
+
 
 
 ## Table of contents
@@ -140,3 +141,9 @@ The "tests" folder uses pytest to contain methods that check the functioning of 
 # Resources
 
 
+## References
+
+<a id="1">[1]</a> 
+Kim J., Shim H., Han K. (2020). 
+Comprehensive Introduction to Fully Homomorphic Encryption for Dynamic Feedback Controller via LWE-based Cryptosystem. 
+Privacy in Dynamical Systems Springer, Singapore. https://doi.org/10.1007/978-981-15-0493-8_10
