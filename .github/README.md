@@ -17,13 +17,13 @@ This python library was developed as a part of a master graduation thesis for th
 The expected performance of the functions within the library with increasing secret key length:
 
 <p align="center">
-  <img src="https://github.com/M-P-P-C/pymomorphic3/blob/main/media/encryption_performance.png?raw=true" width="500">
+  <img src="https://github.com/M-P-P-C/pymomorphic/blob/main/media/encryption_performance.png?raw=true" width="500">
 </p>
 
 # Code Example
 
 ```python
->>> from pymomorphic3 import pymomorphic_py3 as pymorph3
+>>> from pymomorphic import pymomorphic_py3 as pymorph3
 
 >>> m = 600
 
@@ -78,13 +78,13 @@ then cd into the created folder, clone this Github repo, and setup the virtual e
 cd "my_python_envs" 
 
 #This will download the files from github
-git clone -b <branch-name> --single-branch https://<your-username>:<your-private-token>@github.com/M-P-P-C/pymomorphic3.git 
+git clone -b <branch-name> --single-branch https://<your-username>:<your-private-token>@github.com/M-P-P-C/pymomorphic.git 
 
 #cd into the folder you downloaded from github
-cd "pymomorphic3" 
+cd "pymomorphic" 
 
 #Then set up the Python Virtual Environment into a folder called "pymomorphic3_venv"
-python3 -m venv "pymomorphic3_venv"
+python3 -m venv "pymomorphic_venv"
 
 #Finally, you can quickly install all required dependencies into your virtual environment with
 pip install -r "requirements.txt"
@@ -95,7 +95,7 @@ Depending on the branch you cloned, your folder should look something like this:
 .
 ├── media
 │   └── encryption_performance.png
-├── pymomorphic3
+├── pymomorphic
 │   ├── __init__.py
 │   ├── performance_analysis.py
 │   └── pymomorphic_py3.py
