@@ -144,5 +144,5 @@ The "tests" folder uses unittest to contain methods that check the functioning o
 
 <a id="1">[1]</a> 
 Kim J., Shim H., Han K. (2020). 
-"Comprehensive Introduction to Fully Homomorphic Encryption for Dynamic Feedback Controller via LWE-based Cryptosystem". 
+"*Comprehensive Introduction to Fully Homomorphic Encryption for Dynamic Feedback Controller via LWE-based Cryptosystem*". 
 In: Farokhi F. (eds) Privacy in Dynamical Systems Springer, Singapore. https://doi.org/10.1007/978-981-15-0493-8_10
