@@ -10,7 +10,7 @@ This file carries our unit testing for the pymomorphic package.
 
 To carry out the tests run this in the command line:
 
-"python3 -m unittest tests/test_pymomorphic3_py2.py"
+"python3 -m unittest tests/test_pymomorphic_py2.py"
 
 python setup.py bdist_wheel
 pip install dist/pymomorphic3-0.1.0-py3-none-any.whl --force-reinstall
