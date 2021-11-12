@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import warnings
 
 import csv
 import random
-#import rospkg
-import numpy as np
-import os
 import math
 from operator import add
 
-from pymomorphic import pymomorphic_py2 as pymorph2
-from pymomorphic import pymomorphic_py3 as pymorph3
+import numpy as np
+import pandas as pd
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+import pymomorphic_py2 as pymorph2
+import pymomorphic_py3 as pymorph3
 
 import time
-import json #used to convert list to string, used to send messages through ROS, as it does not support values larger than int64
 
-import pandas as pd
+
 
 
 
@@ -31,7 +34,11 @@ def main():
 
     #timeit.timeit(xxx.process_test)
 
+    logarithmic_quantizer(0.01, 2)
+
     measure_performance_enc('N')
+
+
 
     functions=['Enc1', 'Enc2', 'Mult', 'Dec']
     slow_data=[time_enc1,time_enc2,time_mult, time_dec]
@@ -316,7 +323,106 @@ def logarithmic_quantizer(value, sig_fig):
         desired significant figures to plot for
     """
     
-    #TODO: Get code from Matlab
+    #TODO: Tidy up code from Matlab
+
+    ## Define Colors for Plots
+    str1 = '#6699CC' #Light Blue
+    str3 = '#000075' #Dark Blue
+    str4 = '#000075' #Green
+
+    ## Setting Up Variables
+    sp = [1,3] #Significant Figures
+    interv = 0.0001 #Step size for nu
+    scale = 2
+    nu = np.arange(interv*10**(scale),10**scale, interv) #I set the range of nu to start at a larger point than the step size to avoid funky results
+    #nu = -10^2:interv:10^2; % range with negative values
+
+    # Initialized some arrays
+    S = np.zeros([np.size(nu), np.size(sp)]); #array for scaling factor S
+    nu_hat = np.zeros([np.size(nu), np.size(sp)]); #array for scaled nu
+    S_r = np.zeros([np.size(nu), np.size(sp)]); #array for the reciprocal of S
+
+
+    ## Calculating Logarithmic Scaling Function
+    
+    for j in range(1,np.size(sp)):
+        for i in range(1,np.size(nu)):
+            S[i, j] = 10**(sp[j]-np.floor(np.log10(abs(nu[i])))-1)
+
+            nu_hat[i, j] = round(S[i, j]*nu[i])
+
+            S_r[i, j] = S[i, j]**(-1)*nu_hat[i, j]
+    
+    
+    ## Plotting Figures
+
+    fig, ax1 = plt.subplots()
+
+    ax1.semilogx(nu, nu_hat[:, 1],linewidth = 2, color = str4) #PLOT \hat\hat\nu
+    ax1.set_ylabel('$bar{bar{nu}}_k$', fontsize=13)
+    ax1.set_ylim(100, 1000)
+    ax1.set_yticks([100,200,300,400,500,600,700,800,900,1000])
+
+    ax2 = ax1.twinx()
+    ax2.semilogx(nu, nu_hat[:, 0],linewidth = 2, color = str1) #PLOT \hat\hat\nu
+    ax2.set_ylabel('$bar{bar{nu}}_k$', fontsize=13)
+    ax2.set_ylim(1, 10)
+    ax2.set_yticks([1,2,3,4,5,6,7,8,9,10])
+
+    ax1.legend(['$sp_{nu_k}=1$', '$sp_{nu_k}=3$'], loc = 'upper left')
+
+    fig.show()
+
+    '''
+    ############ PLOT FORMATTING STUFF ############
+    x1 = [nu(1), nu(end)]%xlim()
+    y1 = ylim()
+    subplot1.FontSize = 16;
+    xlabel('$\nu_k$', 'fontsize', 13);
+    xlim(subplot1,x1) 
+    xticks([10^(-2), 10^(-1),10^(0), 10^(1), 10^(2)])
+    ylim(subplot1,y1) 
+
+    ax = gca;
+    ax.YAxis(1).Color = color;
+    ax.YAxis(2).Color = color4;
+    ##################################################
+
+
+    subplot2 = subplot(1,2,2);
+
+    loglog(nu,S_r(:, 1),'LineWidth',2,'Color', color) #PLOT S^{-1}*\hat\hat\nu
+    hold on
+    loglog(nu,S_r(:, 2),'LineWidth',2,'Color', color4) #PLOT S^{-1}*\hat\hat\nu
+
+
+    legend('$sp_{\nu_k}=1$', '$sp_{\nu_k}=3$',  'Location', 'northwest')
+
+    ########## PLOT FORMATTING STUFF ##########
+    subplot2.FontSize = 16; 
+    y2 = ylim()
+    hold on
+    #a = line(xlim(), [1,1], 'LineWidth', 1, 'Color', 'k', 'LineStyle','--');
+    #b = line([1,1], ylim(), 'LineWidth', 1, 'Color', 'k', 'LineStyle','--');
+    ylabel('$S_{\nu_k}^{-1}\bar{\bar{\nu_k}}$', 'fontsize', 12);
+    xlabel('$\nu_k$', 'fontsize', 12);
+    ylim(subplot2,y2) 
+    xticks([10^(-2), 10^(-1),10^(0), 10^(1), 10^(2)])
+    grid on
+    ############################################
+    '''
+    ## Scaling Equations
+
+    sp = 1
+    value = 130
+
+    S_v = 10**(sp-np.floor(np.log10(abs(value)))-1)
+
+    scaled_v = np.round(S_v*value)
+
+    div = scaled_v/S_v 
+
+    error = value-div
 
 if __name__ == '__main__':
     main()
