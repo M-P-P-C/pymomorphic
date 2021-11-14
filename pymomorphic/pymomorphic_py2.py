@@ -129,7 +129,13 @@ def main():
     #example of z_values obtained with 3 neighboring robots in ROS
     #z_values = np.array([[ 0.00934644, -0.05645715, -0.80737489,  1.23556484], [-0.00632714,  0.67307276, -0.42058253,  1.25996497],[0.01942838,  0.72351229,  0.38469833,  1.2203629 ]])
 
+    #Test alternative Code:
+    
+    my_key_alt = AltCode(p = my_p , L = my_L, r = my_r , N = my_N)
 
+    my_c = my_key_alt.encrypt(m)
+
+    my_c2 = my_key_alt.encrypt2(m2)
 
     #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
 
@@ -181,7 +187,7 @@ def modulus(a, b, neg = False):
 class KEY:
     """ This class holds all methods needed to encrypt and decrypt data """
 
-    def __init__(self, p = 10**13, L = 10**3, r =10**1, N = 50, seed = None):
+    def __init__(self, p = 10**13, L = 10**3, r =10**1, N = 50, secret_key_set = None, seed = None):
         """
         Initialize the KEY class to encrypt and decrypt integers.
 
@@ -235,9 +241,13 @@ class KEY:
         if self.q > sys.maxsize: #or maxint
             warnings.warn("plaintext space exceeds int64", Warning) #FIXME: this process needs checking
 
-
-        self.secret_key = self.key_generate() #generate secret key for encryption.
-        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
+        #If secret key provided use it, otherwise generate new key
+        if isinstance(secret_key_set, np.ndarray):
+            self.secret_key = secret_key_set
+            self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T 
+        else:
+            self.secret_key = self.key_generate() #generate secret key for encryption.
+            self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
 
         #Initialize a variable used for the method "decryption"
         self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with "1" appended to its start used in the decryption process
@@ -519,12 +529,12 @@ class KEY:
     
         S_vk = tens**(sp_vk-flr-1) #Shoud scale all numbers by the same?  
     
-        VK = (vk*S_vk).astype(int)
+        vk_bar = (vk*S_vk).astype(int)
 
         #VK = VK-np.mod(vk, 1) #Remove Decimals
         #VK = [long(i) for i in np.around(VK, decimals =0)]
 
-        return VK, S_vk[0][0]
+        return vk_bar, S_vk[0][0]
 
 
 
@@ -539,7 +549,18 @@ class HOM_OP:
 
         Parameters
         ----------
+        p : int
+            the plaintext space.
+        L : int
 
+        r : int
+            error to be injected into encrypted values.
+        N : int
+            key lenght of secret key.
+        seed : int, optional
+            set any value to return always the same key, useful for debugging or in the case encrption and decryption happen in different scripts.
+            if None (default), generated numbers will remain random every time the class is called.
+            
         Returns
         -------
 
@@ -672,7 +693,7 @@ def recvr_pub_ros_str(self, c):
     return pub_list
 
 
-class Matlab_Code:
+class AltCode:
     """This class holds alternative methods to compute encryption and decryption provided by Junsoo Kim"""
 
     def __init__(self, p = 10**13, L = 10**3, r =10**1, N = 50, seed = None):

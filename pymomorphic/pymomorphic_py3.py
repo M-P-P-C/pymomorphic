@@ -182,7 +182,7 @@ def modulus(a, b, neg = False):
 class KEY:
     """ This class holds all methods needed to encrypt and decrypt data """
 
-    def __init__(self, p : int = 10**13, L : int = 10**3, r : int =10**1, N : int = 50, seed = None):
+    def __init__(self, p : int = 10**13, L : int = 10**3, r : int =10**1, N : int = 50, secret_key_set = None, seed = None):
         """
         Initialize the KEY class to encrypt and decrypt integers.
 
@@ -237,8 +237,13 @@ class KEY:
             warnings.warn("plaintext space exceeds int64", Warning) #FIXME: this process needs checking
 
 
-        self.secret_key = self.key_generate() #generate secret key for encryption.
-        self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
+        #If secret key provided use it, otherwise generate new key
+        if isinstance(secret_key_set, np.ndarray):
+            self.secret_key = secret_key_set
+            self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T 
+        else:
+            self.secret_key = self.key_generate() #generate secret key for encryption.
+            self.secret_key_np = np.array(self.secret_key, ndmin=2, dtype = object).T #transpose and store key in NumPy array
 
         #Initialize a variable used for the method "decryption"
         self.secret_key_np_dec = np.append([[1]], self.secret_key_np, axis=0) #version of the secret key with "1" appended to its start used in the decryption process
