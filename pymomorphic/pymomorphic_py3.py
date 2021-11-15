@@ -50,7 +50,6 @@ import secrets
 
 #TODO: add check to ensure input arguments are integers
 #TODO: update functions to accept integers instead of just lists, for ease of use.
-#TODO: write test functions to ensure everything works when compiling packages
 
 
 def main():
@@ -334,16 +333,6 @@ class KEY:
         return ciphertext #[list(map(long,i)) for i in ciphertext] 
 
 
-
-
-    def process_test(self):
-        mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = object)
-
-    def process_test2(self):
-        mat_zeros_np = np.zeros(self.lq*(self.N+1)).astype(object)
-
-
-
     def encrypt2(self, m): #This function encrypts the values to be homomorphically multiplied
         """
         Encrypts message in plaintext form using enc2, used to encrypt the multiplicand in c1*c2 
@@ -381,7 +370,24 @@ class KEY:
         return ciphertext.tolist()
 
     
-    def enc_2_mat(self, m): #This function encrypts the values of a matrix to be homomorphically multiplied
+    def enc_2_mat(self, m):
+        '''
+        encrypts the values of a matrix to be homomorphically multiplied
+        
+        Parameters
+        ----------
+        m : int or list?
+            plaintext message array to be encrypted
+
+        Returns
+        -------
+        x : list
+
+        Examples
+        --------
+
+        '''
+        
         n1 = len(m)
         n2 = len(m[0])
 
@@ -401,7 +407,7 @@ class KEY:
         Parameters
         ----------
         c : int or list?
-            ciphetext message to be derypted
+            ciphetext message to be decrypted
 
         Returns
         -------
@@ -533,6 +539,11 @@ class KEY:
         return VK, S_vk[0][0]
 
 
+    def process_test(self):
+        mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = object)
+
+    def process_test2(self):
+        mat_zeros_np = np.zeros(self.lq*(self.N+1)).astype(object)
 
 
 class HOM_OP:

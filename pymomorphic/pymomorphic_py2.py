@@ -49,8 +49,6 @@ from operator import add
 
 #TODO: add check to ensure input arguments are integers
 #TODO: update functions to accept integers instead of just lists, for ease of use.
-#TODO: write test functions to ensure everything works when compiling packages
-
 
 def main():
 
@@ -83,7 +81,7 @@ def main():
 
 
     print("\n")
-    print("Decrypted Variable 1: " + str(my_c_dec))
+    print("Decrypted Variable 1:  " + str(my_c_dec))
     print("Multiplication Result: " + str(my_p_mult))
     print("Expected Result:       " + str(m[0]*m2[0]))
 
@@ -103,7 +101,7 @@ def main():
     my_P_mult = my_key.decrypt(my_C_mult)
 
     print("\n")
-    print("Expected Mult Result: " + str(np.dot(np.array(M),np.array(M2))))
+    print("Expected Mult Result:         " + str(np.dot(np.array(M),np.array(M2))))
     print("Decrypted Matrix Mult Result: " + str(my_P_mult))
 
 
@@ -287,7 +285,7 @@ class KEY:
 
         return sk
 
-    def encrypt(self,m):
+    def encrypt(self, m):
         """
         Encrypts message in plaintext form in enc1, or enc2 defined by the flag 'type' 
         
@@ -337,16 +335,7 @@ class KEY:
         ciphertext = modulus(A, self.q, neg=True)
 
 
-        return ciphertext #[list(map(long,i)) for i in ciphertext] 
-
-
-
-
-    def process_test(self):
-        mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = object)
-
-    def process_test2(self):
-        mat_zeros_np = np.zeros(self.lq*(self.N+1)).astype(object)
+        return ciphertext.tolist() #[list(map(long,i)) for i in ciphertext] 
 
 
 
@@ -361,7 +350,7 @@ class KEY:
 
         Returns
         -------
-        x : numpy.array, shape (len(m),N)
+        x : list, shape (len(m),N)
 
         Examples
         --------
@@ -387,7 +376,24 @@ class KEY:
         return ciphertext.tolist()
 
     
-    def enc_2_mat(self, m): #This function encrypts the values of a matrix to be homomorphically multiplied
+    def enc_2_mat(self, m): 
+        '''
+        encrypts the values of a matrix to be homomorphically multiplied
+        
+        Parameters
+        ----------
+        m : int or list?
+            plaintext message array to be encrypted
+
+        Returns
+        -------
+        x : list
+
+        Examples
+        --------
+
+        '''
+        
         n1 = len(m)
         n2 = len(m[0])
 
@@ -407,7 +413,7 @@ class KEY:
         Parameters
         ----------
         c : int or list?
-            ciphetext message to be derypted
+            ciphetext message to be decrypted
 
         Returns
         -------
@@ -537,6 +543,13 @@ class KEY:
         #VK = [long(i) for i in np.around(VK, decimals =0)]
 
         return vk_bar, S_vk[0][0]
+
+
+    def process_test(self):
+        mat_zeros_np = np.zeros(self.lq*(self.N+1), dtype = object)
+
+    def process_test2(self):
+        mat_zeros_np = np.zeros(self.lq*(self.N+1)).astype(object)
 
 
 
@@ -728,8 +741,9 @@ class AltCode:
 
         self.mod_g = 2**math.ceil(math.log(2*signal_bound*self.L*s_G,2))
         self.mod_q = int(self.mod_g)
-        nu = 16
-        d = math.ceil(math.log(self.mod_q,2)/nu)
+        self.nu = 16
+        self.nu2 = 2**(self.nu-1)
+        self.d = math.ceil(math.log(self.mod_q,2)/self.nu)
 
         self.mod_e = 2^3+1; # should be odd number
         mod_qe = self.mod_q-math.ceil(self.mod_e/2)
@@ -846,11 +860,10 @@ class AltCode:
             for sublist in y:
                 sublist[kk] = temp[0][0]
 
-        
         return y
 
 
-    def splitm(self, d, nu, nu2, mat_inp):
+    def splitm(self, mat_inp):
         '''
         This function is used to multiply ciphertexts
         ''' 
@@ -860,16 +873,16 @@ class AltCode:
         l1 = len(mat_inp)
         l2 = len(mat_inp[0]) if type(mat_inp[0]) is list else 1
 
-        y = [[0]*l2 for i in range(l1*d)] #initialize list of lists
+        y = [[0]*l2 for i in range(l1*self.d)] #initialize list of lists
         #l1 = size(c,1)
         
         temp = mat_inp[:]
 
         #nu2=[[nu2]*l2]*l1
 
-        for i in range(d):
-            y[(i)*l1:(i+1)*l1] = self.bitand(temp, nu2)
-            temp = self.bitshift(temp,-nu)
+        for i in range(self.d):
+            y[(i)*l1:(i+1)*l1] = self.bitand(temp, self.nu2)
+            temp = self.bitshift(temp,-self.nu)
 
         #bitshift = right_shift    
         #for i = 1:d
@@ -889,7 +902,7 @@ class AltCode:
         l2 = len(mat_inp[0]) #columns
 
         #c = [[0]*int(l2*(n_)*d)]*l1*(n_) #array of zeros
-        c = [[0]*int(l2*(self.n_)*d) for i in range(l1*(self.n_))] #initialize list of lists
+        c = [[0]*int(l2*(self.n_)*self.d) for i in range(l1*(self.n_))] #initialize list of lists
         i3 = 0
         #m_temp = double(mod_q)*ones(l1,l2)+mat_inp
         ones_mat = [[self.mod_q]*l1]*l2
@@ -900,7 +913,7 @@ class AltCode:
             m_temp[i] = list( map(add, ones_mat[i], mat_inp[i]) )
         
         c_temp = []
-        for ii in range(int(d)):
+        for ii in range(int(self.d)):
             for j in range(l2):
                 for i in range (l1):
                     #c( (i-1)*(n_)+1:i*(n_), i3 +(j-1)*(n_)+1 : i3+j*(n_)) =bitand( c( (i-1)*n_+1:i*n_   , i3 +  (j-1)*n_+1 : i3+j*n_) + (m_temp(i,j))*eye(n_,'uint64') + Enc(zeros(1,n_)),mod_q-1);
@@ -909,7 +922,7 @@ class AltCode:
 
                     ident = np.identity(2).astype('int').tolist()
                     temp2 = [[m_temp[i][j]*kk for kk in jj] for jj in ident] #multiplication with Identity matrix
-                    temp3 = self.encrypt_alt(self.secret_key, [[0]*self.n_])  
+                    temp3 = self.encrypt(self.secret_key, [[0]*self.n_])  
                     added = temp1[:]
                     for jj in range(len(temp1)):
                         added[jj] = list(map(add, added[jj], temp2[jj]))
@@ -922,7 +935,7 @@ class AltCode:
                             c[(q)+self.n_*i][i3 + (k)+(j*self.n_)] = temp1[q][k]
             #m_temp = bitand(bitshift(m_temp,nu),mod_q-1) #bitshift is done with >> or <<  e.g. 2>>1
             #bitshift(m_temp,nu)
-            m_temp = self.bitand(self.bitshift(m_temp,nu),self.mod_q-1)
+            m_temp = self.bitand(self.bitshift(m_temp,self.nu),self.mod_q-1)
             i3 = i3+(self.n_)*l2
 
         return c
