@@ -359,17 +359,17 @@ def logarithmic_quantizer(value, sig_fig):
     fig, ax1 = plt.subplots()
 
     ax1.semilogx(nu, nu_hat[:, 1],linewidth = 2, color = str4) #PLOT \hat\hat\nu
-    ax1.set_ylabel('$bar{bar{nu}}_k$', fontsize=13)
+    ax1.set_ylabel(r'$\bar{\bar{\nu}}_k$', fontsize=13)
     ax1.set_ylim(100, 1000)
-    ax1.set_yticks([100,200,300,400,500,600,700,800,900,1000])
+    ax1.set_yticks([1,2,3,4,5,6,7,8,9,10])
 
     ax2 = ax1.twinx()
     ax2.semilogx(nu, nu_hat[:, 0],linewidth = 2, color = str1) #PLOT \hat\hat\nu
-    ax2.set_ylabel('$bar{bar{nu}}_k$', fontsize=13)
+    ax2.set_ylabel(r'$\bar{\bar{\nu}}_k$', fontsize=13)
     ax2.set_ylim(1, 10)
-    ax2.set_yticks([1,2,3,4,5,6,7,8,9,10])
+    ax2.set_yticks([100,200,300,400,500,600,700,800,900,1000])
 
-    ax1.legend(['$sp_{nu_k}=1$', '$sp_{nu_k}=3$'], loc = 'upper left')
+    ax1.legend([r'$sp_{\nu_k}=1$', r'$sp_{\nu_k}=3$'], loc = 'upper left')
 
     fig.show()
 
