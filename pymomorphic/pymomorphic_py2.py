@@ -45,7 +45,7 @@ import json #used to convert lists to strings, used to send messages through ROS
 
 import math
 from operator import add
-import secrets
+#import secrets
 
 #TODO: add check to ensure input arguments are integers
 #TODO: update functions to accept integers instead of just lists, for ease of use.
@@ -107,8 +107,8 @@ def main():
     print("Decrypted Matrix Mult Result: " + str(my_P_mult))
 
 
-    array_to_publish = my_key.prep_pub_ros_str([[1,2,3,4,5]])
-    string_array = my_key.recvr_pub_ros_str(array_to_publish)
+    array_to_publish = prep_pub_ros_str([[1,2,3,4,5]])
+    string_array = recvr_pub_ros_str(array_to_publish)
 
     print("\n")
     print("Array to publish in ROS " + array_to_publish)
@@ -134,8 +134,10 @@ def main():
     my_key_alt = AltCode(p = my_p , L = my_L, r = my_r , N = my_N)
 
     my_c = my_key_alt.encrypt(m)
+    my_c_dec = my_key_alt.decrypt(my_c)
 
-    my_c2 = my_key_alt.encrypt2(m2)
+    print("\n")
+    print("Decrypted Variable Alt: " + str(my_c_dec))
 
     #enc_matlab(var.p, var.L, var.q, var.r, var.N, sk, np.zeros(int(math.log10(var.q))*(var.N+1), dtype = int).tolist()) 
 
@@ -660,7 +662,7 @@ class HOM_OP:
         return Mm_np.tolist()
 
 
-def prep_pub_ros_str(self, c):
+def prep_pub_ros_str(c):
     '''Used to convert a list to a string to publish encrypted values in ROS
     
     Parameters
@@ -676,7 +678,7 @@ def prep_pub_ros_str(self, c):
     
     return array_into_string
 
-def recvr_pub_ros_str(self, c):
+def recvr_pub_ros_str(c):
     '''used to convert a string to a list that was previously modified using the method "prep_pub_ros_str()"
     
     Parameters
@@ -692,6 +694,11 @@ def recvr_pub_ros_str(self, c):
         
     return pub_list
 
+
+#TODO: Review code below. The remaining code is a translation of Matlab code provided by Junsoo Kim, that could help speed up
+#some processes, but at the moment it is not applicable
+
+###################################################################################################################
 
 class AltCode:
     """This class holds alternative methods to compute encryption and decryption provided by Junsoo Kim"""
@@ -711,6 +718,23 @@ class AltCode:
         self.L = L
         self.r = r
         self.N = N
+
+        #Variables in Kim's code
+        self.n_ = N+1
+
+        signal_bound = 4
+        s_G = 2**19 #Scaling factor s (for input matrix)
+        #self.L = 2**26
+
+        self.mod_g = 2**math.ceil(math.log(2*signal_bound*self.L*s_G,2))
+        self.mod_q = int(self.mod_g)
+        nu = 16
+        d = math.ceil(math.log(self.mod_q,2)/nu)
+
+        self.mod_e = 2^3+1; # should be odd number
+        mod_qe = self.mod_q-math.ceil(self.mod_e/2)
+        self.mod_qg = self.mod_q/self.mod_g
+        self.mod_q1 = self.mod_q - 1
 
         #convert q to float to use in functions that don't accept large integers
         self.q_float = float(self.q)
@@ -735,326 +759,173 @@ class AltCode:
 
         sk = modulus(rand, self.q*self.L, neg = True)
 
+        #Alternative method for secret_key
+        '''
+        mod_s = 3
+        sk = [self.rand_set.randrange(1,mod_s+1) for iter in range(self.N)]
+        sk = np.array(sk)
+        #'''
+
         return sk
 
-    def encryption_matlab(self, m):
+
+    def encrypt(self, m):
         '''
         This function is to apply LWE encryption to matrices
         '''
-        #signal_bound = 2
-        #s_G = 2**19
-        #L = 2**26
 
-        n_ = self.N+1
-        mod_g = 2**math.ceil(math.log(2*2*self.L*2**19,2))
-        mod_q = self.q#int(mod_g)
+        l1 = len(m) #rows
+        l2 = len(m[0]) if type(m[0]) is list else 1 #columns
+        
+        #ciphertext = [[0]*l2]*(n_*l1)#[[[0]*l2]*l1*n_ #array of zeros
+        ciphertext = np.zeros((self.n_*l1,l2), dtype = object)
 
-        #d = math.ceil(math.log(mod_q,2)/nu)
-        mod_e = self.r
-        #mod_qe = mod_q-math.ceil(mod_e/2)
-        #mod_qg = mod_q/mod_g
-        mod_q1 = mod_q -1
-
-        #mod_s = 3
-        #s= random.randrange(1,mod_s)
-
-        l2 = len(m) #rows
-        l1 = len(m[0]) if type(m[0]) is list else 1 #columns
-
-        ciphertext = [[0]*l2]*(n_*l1)#[[[0]*l2]*l1*n_ #array of zeros
-
-        from operator import add, sub
         for i in range(l1):
-            #temp = zeros( n_, l2, 'uint64');
-            temp  = [[0]*l2]*(n_)#[[[0]]*n_]*l2
+
+            temp = np.zeros((self.n_, l2), dtype = object)
 
             #temp(2:n_,:) = uint64(randi(mod_q,n_-1,l2));
-            for j in range(1,n_):
-                rand_vect = [random.randrange(mod_q) for iter in range(l2)]
-                temp[j] = rand_vect
+            for j in range(l2):
+                temp[1:] = self.rand_set_np.uniform(low = 0, high = self.mod_q, size=(self.n_-1, l2))
+
+            temp_list = [[int(j) for j in inner] for inner in temp]
+            temp = np.array(temp_list, dtype=object)
 
             #temp_e = uint64(randi(mod_e,1,l2))+uint64(mod_qe*ones(1,l2,'uint64'));
-            temp_e1 = [random.randrange(mod_e) for iter in range(l2)]
-            temp_e2 = [mod_q]*l2
-            temp_e =  list( map(add, temp_e1, temp_e2) )
+            temp_e1 = [self.rand_set.randrange(self.mod_e) for iter in range(l2)]
+            temp_e2 = self.mod_q*np.ones((1, l2), dtype = object)
+            temp_e = np.array(temp_e1)+temp_e2
 
             #temp(1,:) = bitand( mod_q*ones(1,l2,'uint64') - mult(s,temp(2:n_,:))+ uint64(mod_qg*(mod_g+round(m(i,:))))+temp_e ,mod_q1);
-            term = [mod_q]*l2
-            term2 = self.mult(self.q, self.secret_key, temp[1:])[0]
-            dum = m if type(m[0]) is int else m[i]
-            term3 = [j+mod_g for j in dum]
+            term1 = self.mod_q*np.ones((1, l2), dtype = object)
+            term2 = self.mult(self.secret_key[np.newaxis], temp[1:])[0]
+            term3 = [int(self.mod_qg*(self.mod_g+j)) for j in m]
 
-            added = list( map(sub, term, term2) )
-            added2 = list( map(add, term3, temp_e) )
-            added = list( map(add, added, added2) )
-
-            temp[0] = self.bitand([added],mod_q1)[0]
+            temp[0] = np.bitwise_and(term1 - term2 + term3 + temp_e, self.mod_q1)
 
             #c((i-1)*(n_)+1:i*(n_),:) = temp;
-            ciphertext[(i)*(n_):(i+1)*(n_)] = temp
+            ciphertext[(i)*(self.n_):(i+1)*(self.n_)] = temp
 
         return ciphertext
 
 
-    def decrypt_matlab(self, c):
+    def decrypt(self, c):
         '''
         This function is to apply LWE decryption to matrices
         '''
-
-        signal_bound = 2
-        s_G = 2**19
-        #L = 2**26
-        n=self.N
-        n_ = n+1
-        mod_g = 2**math.ceil(math.log(2*signal_bound*self.L*s_G,2))
-        mod_q = int(mod_g)
-        nu = 16
-        d = math.ceil(math.log(mod_q,2)/nu)
-        mod_e = 2**6+1
-        mod_qe = mod_q-math.ceil(mod_e/2)
-        mod_qg = mod_q/mod_g
-        mod_q1 = mod_q -1
-
         #q = double(mod_q)
 
-        t= [1]+ self.secret_key
-        l = len([c])/(n+1)
-        y = np.zeros((l, 1)).astype(int).tolist()
+        t = np.insert(self.secret_key, 0, 1)
+        l = len(c)/(self.N+1)
+        y = np.zeros((l, 1), dtype = object)
 
         for i in range(0,l):
-            temp = self.mult(t,vv[(i-1)*(n+1)+1:i*(n+1)])
+            temp = self.mult(t[np.newaxis],c[(i)*(self.N+1):(i+1)*(self.N+1)])
     
-            m = temp - (temp>=self.q/2) * self.q
+            m = temp - (temp>=self.mod_q/2) * self.mod_q
         
-            y[i,1] = round(m * (mod_g/self.q))
+            y[i,0] = round(m[0] * (self.mod_g/self.mod_q))
 
         return y
 
     def mult(self, c, C):
 
         l1 = len([c])
-        l2 = len(c)
+        l2 = len(c[0])
         l3 = len(C[0])
 
-        y = np.zeros((l1, l3)).astype(int).tolist()
+        y = np.zeros((l1, l3), dtype = object)
         
-        for ii in range(0,l3):
-            temp = np.zeros((l1, 1)).astype(int).tolist()
+        for kk in range(l3):
+            temp = np.zeros((l1, 1), dtype = object)
 
-            for i in range(0,l2):
-                temp2 = self.bitand([c[i]*C[i][ii]], self.q)
-                temp = self.bitand( list(map(add, temp[0], temp2[0])), self.q)
+            for k in range(l2):
+                temp2 = np.bitwise_and([c[:,k]*C[k,kk]], self.mod_q1)
+                temp = np.bitwise_and(temp + temp2, self.mod_q1)
 
             for sublist in y:
-                sublist[ii] = temp[0][0]
+                sublist[kk] = temp[0][0]
 
         
         return y
 
-    def bitshift(mat_A, shift):
+
+    def splitm(self, d, nu, nu2, mat_inp):
         '''
-        A translation of Matlab's bitshift function. returns the element-wise "and" of elements between lists. inputs must be list of lists
+        This function is used to multiply ciphertexts
+        ''' 
 
-        E.G. calculating the bitshift() of 20 = 010100 by 1
+        #y = zeros(size(c,1)*d, size(c,2), 'uint64')
 
-        010100
+        l1 = len(mat_inp)
+        l2 = len(mat_inp[0]) if type(mat_inp[0]) is list else 1
+
+        y = [[0]*l2 for i in range(l1*d)] #initialize list of lists
+        #l1 = size(c,1)
         
-        101000 =  40
+        temp = mat_inp[:]
+
+        #nu2=[[nu2]*l2]*l1
+
+        for i in range(d):
+            y[(i)*l1:(i+1)*l1] = self.bitand(temp, nu2)
+            temp = self.bitshift(temp,-nu)
+
+        #bitshift = right_shift    
+        #for i = 1:d
+            #y((i-1)*l1+1:i*l1 ,:) = bitand(temp, nu2)
+            #temp = bitshift(temp,-nu)
+
+        return y
+
+    def encrypt_matrix(self, mat_inp):
         '''
-        #mat_A = [[24214,13213],[24214,13213]] 
-        #mat_A = [[206001532940593L]]
-        #mat_A = [[24214,13213]]
-        #mat_A= [[2],[3],[4]]
-
-        shift = 1
-
-        l1 = len(mat_A)
-        l2 = len(mat_A[0]) if type(mat_A[0]) is list else 1
-
-        out = [[0]*l2 for i in range(l1)] #initialize list of lists
-        for k in range(l1):
-            for i in range(l2):
-                
-                if shift > 0:
-                    out[k][i] = mat_A[k][i]<<abs(shift)
-                elif shift < 0:
-                    out[k][i] = mat_A[k][i]>>abs(shift)
-        return out
-
-    def bitand(mat_A, mat_B):
-        '''
-        A translation of Matlab's bitand function. returns the element-wise "and" of elements between lists. inputs must be list of lists
-
-        E.G. calculating the bitand() of 20 = 010100, and 24 = 011000
-
-        010100
-        &&&&&&
-        011000
-        ||||||
-        010000  =  16
-        '''
-        #import pdb
-        #pdb.set_trace()
-
-        #mat_A = [[24214,13213],[24214,13213]] #l1 = 2, l2 = 2
-        #mat_B = 44#[[44, 44], [44,44]]
-        #out = [[4, 12], [4, 12]]
-
-        #mat_A = [206001532940593L] #l1 = 1, l2 = 1
-        #mat_B = 281474976710655L
-        #out = [[206001532940593L]]
-
-        #mat_A = [[24214,13213]] #l1 = 2, l2 = 1
-        #mat_B = 44
-        #out = [[4, 12]]
-
-        #mat_A= [[2],[3],[4]] #l1 = 3, l2 = 1
-        #mat_B= 6
-        #out = [[2], [2], [4]]
-
+        This function is used to encrypt a matrix.
         
+        GSW encrypt the gains of the control law for the Infinite Time Horizon computations
+        ''' 
 
-        l1 = len(mat_A)
-        l2 = len(mat_A[0]) if type(mat_A[0]) is list else 1
+        l1 = len(mat_inp) #rows
+        l2 = len(mat_inp[0]) #columns
 
-        if type(mat_A[0]) is list:
-            mat_B = [[mat_B]*l2]*l1 
-        else:
-            mat_B = [mat_B]*l1 
+        #c = [[0]*int(l2*(n_)*d)]*l1*(n_) #array of zeros
+        c = [[0]*int(l2*(self.n_)*d) for i in range(l1*(self.n_))] #initialize list of lists
+        i3 = 0
+        #m_temp = double(mod_q)*ones(l1,l2)+mat_inp
+        ones_mat = [[self.mod_q]*l1]*l2
+        
+        from operator import add
+        m_temp = [[]]*l2
+        for i in range(l2):
+            m_temp[i] = list( map(add, ones_mat[i], mat_inp[i]) )
+        
+        c_temp = []
+        for ii in range(int(d)):
+            for j in range(l2):
+                for i in range (l1):
+                    #c( (i-1)*(n_)+1:i*(n_), i3 +(j-1)*(n_)+1 : i3+j*(n_)) =bitand( c( (i-1)*n_+1:i*n_   , i3 +  (j-1)*n_+1 : i3+j*n_) + (m_temp(i,j))*eye(n_,'uint64') + Enc(zeros(1,n_)),mod_q-1);
+                    #temp1 = c[(ii)*2:(ii+1)*2][i3 +  (j)*2 : i3+(j+1)*2]
+                    temp1 = [item[i3 + (j)*2 : i3+(j+1)*2] for item in c[(i)*self.n_:(i+1)*self.n_]]
 
+                    ident = np.identity(2).astype('int').tolist()
+                    temp2 = [[m_temp[i][j]*kk for kk in jj] for jj in ident] #multiplication with Identity matrix
+                    temp3 = self.encrypt_alt(self.secret_key, [[0]*self.n_])  
+                    added = temp1[:]
+                    for jj in range(len(temp1)):
+                        added[jj] = list(map(add, added[jj], temp2[jj]))
+                        added[jj] = list(map(add, added[jj], temp3[jj]))
+                    
+                    temp1 = self.bitand( added,self.mod_q-1)
 
-        zzz = [[]]*l1
-        if type(mat_A[0]) is list:   
-            for i in range(len(mat_A)):
-                zzz[i] = zip(mat_A[i],mat_B[i]) 
-        else:
-            zzz = zip(mat_A,mat_B)
-        #zzz = zip(mat_A,mat_B)
-        #print(zzz)
-        j=0
-        out = [[0]*l2 for i in range(l1)] #initialize list of lists
-        for i in range(l1):
-            for k in range(l2):
-                if type(mat_A[0]) is list: #l2>1:
-                    xxx = zzz[i][k]
-                else:
-                    xxx = zzz[k]
-                #zzz = zip(mat_A[i],mat_B[i])
+                    for q in range(len(temp1)):
+                        for k in range(len(temp1[0])):
+                            c[(q)+self.n_*i][i3 + (k)+(j*self.n_)] = temp1[q][k]
+            #m_temp = bitand(bitshift(m_temp,nu),mod_q-1) #bitshift is done with >> or <<  e.g. 2>>1
+            #bitshift(m_temp,nu)
+            m_temp = self.bitand(self.bitshift(m_temp,nu),self.mod_q-1)
+            i3 = i3+(self.n_)*l2
 
-                if type(xxx) is list:
-                    out[i][k] = int(xxx[0][0]) & int(xxx[0][1]) 
-                else:
-                    out[i][k] = int(xxx[0]) & int(xxx[1]) 
-                j=j+1 
-                #    for k in range(len(mat_A[0])):
-                #        out[i][k] = int(zzz[i][k]) & int(zzz[i][k])        
-                
-        #if len(mat_A)==1:
-        #    out = [k & l for k, l in zip(mat_A, mat_B)]
-        #else:
-        #    out = [[k & l for k, l in zip(i, j)] for i, j in zip(mat_A, mat_B)]
-
-        return out
-
-
-#TODO: Review code below. The remaining code below is a translation of Matlab code provided by Junsoo Kim, that could help speed up
-#some processes, but at the moment it is not applicable
-
-###################################################################################################################
-
-
-def enc_gains(L, N, secret_key, mat_inp):
-    '''
-    This function is used to GSW encrypt the gains of the control law for the Infinite Time Horizon computations
-    ''' 
-    global signal_bound
-
-    mod_s = 3
-    #n=1
-    n_ = N #n+1
-    s_G = 2**19
-    L = 2**26
-    import math
-    mod_g = 2**math.ceil(math.log(2*signal_bound*L*s_G,2))
-    mod_q = int(mod_g)
-    mod_e = 2**6+1
-    nu = 16
-    d = math.ceil(math.log(mod_q,2)/nu)
-    mod_qe = mod_q-math.ceil(mod_e/2)
-    mod_qg = mod_q/mod_g
-    mod_q1 = mod_q -1
-    nu2 = 2**nu-1
-
-    l1 = len(mat_inp) #rows
-    l2 = len(mat_inp[0]) #columns
-
-    #c = [[0]*int(l2*(n_)*d)]*l1*(n_) #array of zeros
-    c = [[0]*int(l2*(n_)*d) for i in range(l1*(n_))] #initialize list of lists
-    i3 = 0
-    #m_temp = double(mod_q)*ones(l1,l2)+mat_inp
-    ones_mat = [[mod_q]*l1]*l2
-    
-    from operator import add
-    m_temp = [[]]*l2
-    for i in range(l2):
-        m_temp[i] = list( map(add, ones_mat[i], mat_inp[i]) )
-    
-    c_temp = []
-    for ii in range(int(d)):
-        for j in range(l2):
-            for i in range (l1):
-                #c( (i-1)*(n_)+1:i*(n_), i3 +(j-1)*(n_)+1 : i3+j*(n_)) =bitand( c( (i-1)*n_+1:i*n_   , i3 +  (j-1)*n_+1 : i3+j*n_) + (m_temp(i,j))*eye(n_,'uint64') + Enc(zeros(1,n_)),mod_q-1);
-                #temp1 = c[(ii)*2:(ii+1)*2][i3 +  (j)*2 : i3+(j+1)*2]
-                temp1 = [item[i3 + (j)*2 : i3+(j+1)*2] for item in c[(i)*n_:(i+1)*n_]]
-
-                ident = np.identity(2).astype('int').tolist()
-                temp2 = [[m_temp[i][j]*kk for kk in jj] for jj in ident] #multiplication with Identity matrix
-                temp3 = enc_mat(secret_key, [[0]*n_])  
-                added = temp1[:]
-                for jj in range(len(temp1)):
-                    added[jj] = list(map(add, added[jj], temp2[jj]))
-                    added[jj] = list(map(add, added[jj], temp3[jj]))
-                
-                temp1 = bitand( added,mod_q-1)
-
-                for q in range(len(temp1)):
-                    for k in range(len(temp1[0])):
-                        c[(q)+n_*i][i3 + (k)+(j*n_)] = temp1[q][k]
-        #m_temp = bitand(bitshift(m_temp,nu),mod_q-1) #bitshift is done with >> or <<  e.g. 2>>1
-        #bitshift(m_temp,nu)
-        m_temp = bitand(bitshift(m_temp,nu),mod_q-1)
-        i3 = i3+(n_)*l2
-
-    return c
-
-def splitm(d, nu, nu2, mat_inp):
-
-    #y = zeros(size(c,1)*d, size(c,2), 'uint64')
-
-    l1 = len(mat_inp)
-    l2 = len(mat_inp[0]) if type(mat_inp[0]) is list else 1
-
-    y = [[0]*l2 for i in range(l1*d)] #initialize list of lists
-    #l1 = size(c,1)
-    
-    temp = mat_inp[:]
-
-    #nu2=[[nu2]*l2]*l1
-
-    for i in range(d):
-        y[(i)*l1:(i+1)*l1] = bitand(temp, nu2)
-        temp = bitshift(temp,-nu)
-    #for i = 1:d
-        #y((i-1)*l1+1:i*l1 ,:) = bitand(temp, nu2)
-        #temp = bitshift(temp,-nu)
-
-    return y
-
-
-
-
-
-
+        return c
 
 
 
